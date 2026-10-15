@@ -1,0 +1,3 @@
+from_activity,to_activity,avg_waiting_time_hours,median_waiting_time_hours,case_count,transition_count
+Assessment,Discharge,2.0,2.0,1,1
+Registration,Assessment,1.5,1.5,2,2

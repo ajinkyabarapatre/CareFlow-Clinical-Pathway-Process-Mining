@@ -23,5 +23,6 @@ python .\process_mining\bottlenecks.py --input .\path\to\event_log.csv
 ```
 
 To choose another output location, add `--output .\path\to\results.csv`.
-The output directory is created automatically. No event-log data is included
-in this repository; provide the project event log when running the analysis.
+The output directory is created automatically. The checked-in
+`process_mining/outputs/bottlenecks_sample.csv` contains example results from
+synthetic events only; provide the project event log to produce real results.
