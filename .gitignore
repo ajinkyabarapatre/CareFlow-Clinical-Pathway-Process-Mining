@@ -1,3 +1,5 @@
+patients.csv
+*.csv
 *.json
 .env
 __pycache__/

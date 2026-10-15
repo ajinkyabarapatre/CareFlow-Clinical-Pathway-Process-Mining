@@ -52,3 +52,39 @@ These are the main numbers our dashboard will show.
 
 \- How: compare each patient's path with the ideal path (from Member 3's work)
 
+
+
+
+
+\## KPIs we can build now from patients.csv
+
+\- Average OPD waiting time: average of opd\_waiting\_time\_min, OPD patients only
+
+\- Average room allocation time: average of room\_allocation\_time\_min, IPD and Emergency only
+
+\- Patients per day: count of patient\_id for each admission\_date
+
+\- Average patient rating: average of patient\_rating, ignoring blanks
+
+\- Average treatment cost: average of treatment\_cost
+
+\- Waiting time by disease: bar chart of opd\_waiting\_time\_min per disease
+
+
+
+\## Filters (slicers)
+
+\- Patient type, patient category, severity level, disease, doctor ID, gender, area, age group, date
+
+
+
+\## KPIs that need the event log (later)
+
+\- Loop-back percentage
+
+\- Average time between steps
+
+\- Longest transition (biggest bottleneck)
+
+\- Non-compliant cases
+
