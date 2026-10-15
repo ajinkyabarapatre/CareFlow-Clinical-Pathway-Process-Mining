@@ -1,0 +1,4 @@
+patients.csv
+*.csv
+*.json
+.env
