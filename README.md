@@ -2,29 +2,49 @@
 
 ## Member 3: activity-transition bottlenecks
 
-`process_mining/bottlenecks.py` calculates the average and median waiting time
-between consecutive activities, along with the number of cases and observed
-transitions for each activity pair. It reads a CSV with `case_id`, `activity`,
-and `timestamp` columns. Timestamps should be ISO-8601; timestamps without an
-explicit timezone are interpreted as UTC. Waiting times are reported in hours
-and rounded to three decimal places.
+`process_mining/bottlenecks.py` converts the event log to a PM4Py event log and
+dataframe, then calculates average, median, and maximum waiting time in hours,
+case count, and transition count for every consecutive activity pair. It ranks
+transitions by average waiting time and writes the ranked results and top-10
+chart to `process_mining/outputs/`.
 
-Run the built-in synthetic-data self-check from the repository root:
+Install the project dependencies from the repository root:
 
 ```powershell
-python .\process_mining\bottlenecks.py --verify
+python -m pip install -r requirements.txt
 ```
 
-Analyze an event log and write the results to
-`process_mining/outputs/bottlenecks.csv`:
+The input CSV must contain `case_id`, `activity`, and `timestamp` columns.
+Timestamps must be ISO-8601; timestamps without a timezone are interpreted as
+UTC. Missing or invalid timestamps are reported with their CSV row number.
+Events with equal timestamps are ordered by activity and then source row, so
+their waiting time is zero. If `department` and/or `patient_group` columns are
+present, the output also includes breakdowns using the source event's group.
+
+Analyze a patient event log from the repository root:
 
 ```powershell
 python .\process_mining\bottlenecks.py --input .\path\to\event_log.csv
 ```
 
-To choose another output location, add `--output .\path\to\results.csv`.
-The output directory is created automatically. The checked-in
-`process_mining/outputs/bottlenecks_sample.csv` contains example results from
-synthetic events only; provide the project event log to produce real results.
+By default, the script writes `process_mining/outputs/bottlenecks.csv` and
+`process_mining/outputs/bottlenecks.png`. Override either output path as needed:
+
+```powershell
+python .\process_mining\bottlenecks.py --input .\path\to\event_log.csv `
+  --output .\path\to\bottlenecks.csv `
+  --chart-output .\path\to\bottlenecks.png
+```
+
+Run the synthetic self-check, including the PM4Py conversion and output checks:
+
+```powershell
+python .\process_mining\bottlenecks.py --verify
+```
+
+The equivalent BigQuery top-10 query is in `sql/05_bottlenecks.sql`. Replace
+the example table path there with the event-log table. The checked-in
+`process_mining/outputs/bottlenecks_sample.csv` contains synthetic results only;
+provide the patient event log to produce real results.
 
 1234
