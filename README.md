@@ -47,4 +47,27 @@ the example table path there with the event-log table. The checked-in
 `process_mining/outputs/bottlenecks_sample.csv` contains synthetic results only;
 provide the patient event log to produce real results.
 
+## Member 3: clinical-pathway conformance
+
+`process_mining/conformance_check.py` replays each case against the ideal
+`Admission -> Triage -> Diagnosis -> Treatment -> Discharge` pathway and writes
+per-case fitness, conformance, and deviation flags to
+`process_mining/output/conformance_results.csv`. Run it from the repository
+root:
+
+```powershell
+python -m pip install pm4py pandas
+python .\process_mining\conformance_check.py
+```
+
+The input CSV (`process_mining/sample_event_log.csv`) must contain `case_id`,
+`activity`, and `timestamp`; events are ordered by timestamp, then activity.
+Token-replay fitness of `1.0` indicates a perfect replay. Lower scores reflect
+missing or extra token behavior; they are not a literal percentage of correct
+activities or a measure of clinical severity. Conformance is determined by an
+exact match to the ideal activity sequence, while the CSV identifies skipped,
+repeated, and out-of-order steps. `sql/06_conformance_summary.sql` provides the
+matching BigQuery conforming/non-conforming case counts; replace its example
+table path with the event-log table.
+
 1234
