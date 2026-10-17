@@ -1,0 +1,5 @@
+case_id,activities,fitness_score,is_conforming,deviations
+case-001,Admission -> Triage -> Diagnosis -> Treatment -> Discharge,1.0,True,
+case-002,Admission -> Triage -> Treatment -> Discharge,0.8,False,skipped: Diagnosis
+case-003,Admission -> Triage -> Triage -> Diagnosis -> Treatment -> Discharge,0.8571428571428572,False,repeated: Triage
+case-004,Admission -> Diagnosis -> Triage -> Treatment -> Discharge,0.8333333333333334,False,out of order

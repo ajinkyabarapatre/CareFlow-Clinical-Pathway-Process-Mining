@@ -253,10 +253,11 @@ def verify() -> None:
     csv_source = StringIO(
         "case_id,activity,timestamp,department,patient_group\n"
         "case-1,Registration,2026-01-01T00:00:00Z,ED,adult\n"
-        "case-1,Assessment,2026-01-01T00:00:00Z,ED,adult\n"
-        "case-1,Discharge,2026-01-01T02:00:00Z,ED,adult\n"
+        "case-1,Assessment,2026-01-01T01:00:00Z,ED,adult\n"
+        "case-1,Assessment,2026-01-01T01:00:00Z,ED,adult\n"
+        "case-1,Discharge,2026-01-01T03:00:00Z,ED,adult\n"
         "case-2,Registration,2026-01-02T00:00:00Z,ED,pediatric\n"
-        "case-2,Assessment,2026-01-02T01:00:00Z,ED,pediatric\n"
+        "case-2,Assessment,2026-01-02T02:00:00Z,ED,pediatric\n"
     )
     events = _read_events(csv_source)
     results = analyze_events(events)
@@ -268,9 +269,9 @@ def verify() -> None:
         and result["to_activity"] == "Assessment"
     )
     expected_metrics = {
-        "avg_waiting_time_hours": 0.5,
-        "median_waiting_time_hours": 0.5,
-        "max_waiting_time_hours": 1.0,
+        "avg_waiting_time_hours": 1.5,
+        "median_waiting_time_hours": 1.5,
+        "max_waiting_time_hours": 2.0,
         "case_count": 2,
         "transition_count": 2,
     }
@@ -278,6 +279,13 @@ def verify() -> None:
         registration_to_assessment[key] == value
         for key, value in expected_metrics.items()
     ), f"Unexpected transition metrics: {registration_to_assessment!r}"
+    assert any(
+        result["group_by"] == "all"
+        and result["from_activity"] == "Assessment"
+        and result["to_activity"] == "Assessment"
+        and result["max_waiting_time_hours"] == 0
+        for result in results
+    ), "Events with equal timestamps must produce zero-hour waits"
     assert any(
         result["group_by"] == "patient_group"
         and result["group_value"] == "adult"
