@@ -1,0 +1,9 @@
+from_activity,to_activity,transition_count,mean_waiting_time_hours,median_waiting_time_hours,max_waiting_time_hours,p90_waiting_time_hours,bottleneck_rank,is_bottleneck
+Admission,Diagnosis,1,0.75,0.75,0.75,0.75,1,True
+Treatment,Discharge,4,0.75,0.75,0.75,0.75,2,True
+Triage,Treatment,2,0.625,0.625,1.0,0.925,3,True
+Diagnosis,Treatment,2,0.5,0.5,0.5,0.5,4,False
+Triage,Diagnosis,2,0.45833333333333337,0.45833333333333337,0.5,0.4916666666666667,5,False
+Admission,Triage,3,0.25,0.25,0.25,0.25,6,False
+Diagnosis,Triage,1,0.25,0.25,0.25,0.25,7,False
+Triage,Triage,1,0.08333333333333333,0.08333333333333333,0.08333333333333333,0.08333333333333333,8,False

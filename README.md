@@ -2,6 +2,23 @@
 
 ## Member 3: activity-transition bottlenecks
 
+`process_mining/bottleneck_analysis.py` writes mean, median, maximum, and
+90th-percentile waiting times for every directly-follows activity pair. Pairs
+are ranked by mean waiting time, with the top three flagged as bottlenecks.
+Run it from the repository root (the sample event log is used by default):
+
+```powershell
+python .\process_mining\bottleneck_analysis.py
+```
+
+The results are written to `process_mining/output/bottlenecks.csv`, with a
+mean-wait performance DFG at `process_mining/output/performance_dfg.png` and a
+top-10 transition bar chart at
+`process_mining/output/top_10_slowest_transitions.png`. Pass `--input` to
+analyze a different CSV. The SQL equivalent is in
+`sql/04_bottleneck_metrics.sql`; its metric and ranking column names match the
+Python CSV.
+
 `process_mining/bottlenecks.py` converts the event log to a PM4Py event log and
 dataframe, then calculates average, median, and maximum waiting time in hours,
 case count, and transition count for every consecutive activity pair. It ranks
