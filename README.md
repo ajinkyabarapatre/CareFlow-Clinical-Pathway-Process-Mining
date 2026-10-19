@@ -88,3 +88,17 @@ matching BigQuery conforming/non-conforming case counts; replace its example
 table path with the event-log table.
 
 1234
+
+## Process discovery
+
+`process_mining/process_discovery.py` reads the sample event log, orders events
+by timestamp, converts them to a PM4Py event log, and discovers a frequency
+directly-follows graph (DFG) and an Inductive Miner Petri net. It prints the
+number of cases, activities, and variants, and writes the visualizations to
+`process_mining/output/dfg.png` and `process_mining/output/petri_net.png`.
+
+Run from the repository root:
+
+```powershell
+python .\process_mining\process_discovery.py
+```
