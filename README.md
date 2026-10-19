@@ -102,3 +102,17 @@ Run from the repository root:
 ```powershell
 python .\process_mining\process_discovery.py
 ```
+
+## Major patient paths
+
+`process_mining/major_paths.py` reports the five most frequent patient-path
+variants, their case counts, and their percentage of all cases. It writes the
+table to `process_mining/output/top_variants.csv`, and saves a DFG containing
+the most frequent paths to `process_mining/output/major_paths.png`. The script
+also prints a plain-English summary of those pathways.
+
+Run from the repository root:
+
+```powershell
+python .\process_mining\major_paths.py
+```

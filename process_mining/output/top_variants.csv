@@ -1,0 +1,5 @@
+rank,variant,case_count,percentage
+1,Admission -> Diagnosis -> Triage -> Treatment -> Discharge,1,25.0
+2,Admission -> Triage -> Diagnosis -> Treatment -> Discharge,1,25.0
+3,Admission -> Triage -> Treatment -> Discharge,1,25.0
+4,Admission -> Triage -> Triage -> Diagnosis -> Treatment -> Discharge,1,25.0
