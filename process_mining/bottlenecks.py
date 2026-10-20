@@ -323,18 +323,18 @@ def main() -> None:
         type=Path,
         help="CSV event log containing case_id, activity, and timestamp columns",
     )
-    output_directory = Path(__file__).resolve().parent / "outputs"
+    output_directory = Path(__file__).resolve().parent / "output"
     parser.add_argument(
         "--output",
         type=Path,
-        default=output_directory / "bottlenecks.csv",
-        help="Output CSV path (default: process_mining/outputs/bottlenecks.csv)",
+        default=output_directory / "ranked_bottlenecks.csv",
+        help="Output CSV path (default: process_mining/output/ranked_bottlenecks.csv)",
     )
     parser.add_argument(
         "--chart-output",
         type=Path,
-        default=output_directory / "bottlenecks.png",
-        help="Output chart path (default: process_mining/outputs/bottlenecks.png)",
+        default=output_directory / "ranked_bottlenecks.png",
+        help="Output chart path (default: process_mining/output/ranked_bottlenecks.png)",
     )
     parser.add_argument(
         "--verify",
