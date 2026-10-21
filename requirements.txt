@@ -2,3 +2,4 @@ matplotlib
 pm4py
 pandas
 networkx
+pytest
