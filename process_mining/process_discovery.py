@@ -1,5 +1,6 @@
 """Discover a directly-follows graph and Petri net from a patient event log."""
 
+import argparse
 from pathlib import Path
 
 import matplotlib
@@ -10,6 +11,14 @@ from pm4py.objects.log.obj import EventLog
 
 
 REQUIRED_COLUMNS = ("case_id", "activity", "timestamp")
+SUMMARY_COLUMNS = (
+    "cases",
+    "events",
+    "activities",
+    "variants",
+    "average_case_duration_hours",
+    "max_case_duration_hours",
+)
 
 
 def _pyplot():
@@ -154,7 +163,10 @@ def save_petri_net_image(
 
 def read_event_log(input_path: Path) -> tuple[pd.DataFrame, EventLog]:
     """Read, validate, order, and convert a CSV event log to PM4Py."""
-    dataframe = pd.read_csv(input_path)
+    try:
+        dataframe = pd.read_csv(input_path)
+    except (OSError, pd.errors.ParserError, UnicodeDecodeError) as error:
+        raise ValueError(f"Could not read event-log CSV '{input_path}': {error}") from error
     missing = [column for column in REQUIRED_COLUMNS if column not in dataframe]
     if missing:
         raise ValueError(
@@ -169,18 +181,29 @@ def read_event_log(input_path: Path) -> tuple[pd.DataFrame, EventLog]:
         if invalid.any():
             raise ValueError(f"Event log contains an empty {column} value")
 
-    missing_timestamps = dataframe["timestamp"].isna() | dataframe[
-        "timestamp"
-    ].astype("string").str.strip().eq("")
-    if missing_timestamps.any():
-        raise ValueError("Event log contains an empty timestamp value")
-
-    dataframe["timestamp"] = pd.to_datetime(
-        dataframe["timestamp"], utc=True, errors="raise"
+    raw_timestamps = dataframe["timestamp"]
+    parsed_timestamps = pd.to_datetime(
+        raw_timestamps, utc=True, errors="coerce"
     )
-    dataframe = dataframe.sort_values("timestamp", kind="stable").reset_index(
-        drop=True
-    )
+    invalid_timestamps = parsed_timestamps.isna()
+    if invalid_timestamps.any():
+        bad_rows = []
+        for index in dataframe.index[invalid_timestamps]:
+            source_row = int(index) + 2
+            value = raw_timestamps.loc[index]
+            reason = "empty" if pd.isna(value) or not str(value).strip() else "invalid"
+            bad_rows.append(f"row {source_row} ({reason}: {value!r})")
+        details = "; ".join(bad_rows)
+        raise ValueError(
+            f"Invalid timestamp value(s) in event log: {details}. "
+            "Rows are numbered as they appear in the CSV, including the header."
+        )
+    dataframe["timestamp"] = parsed_timestamps
+    dataframe["_source_order"] = range(len(dataframe))
+    dataframe = dataframe.sort_values(
+        ["case_id", "timestamp", "activity", "_source_order"],
+        kind="stable",
+    ).drop(columns="_source_order").reset_index(drop=True)
     formatted = pm4py.format_dataframe(
         dataframe,
         case_id="case_id",
@@ -190,12 +213,51 @@ def read_event_log(input_path: Path) -> tuple[pd.DataFrame, EventLog]:
     return formatted, pm4py.convert_to_event_log(formatted)
 
 
+def build_discovery_summary(dataframe: pd.DataFrame, event_log: EventLog) -> pd.DataFrame:
+    """Return one-row case, event, variant, and duration summary metrics."""
+    case_durations = dataframe.groupby("case_id", sort=False)["timestamp"].agg(
+        start="min", end="max"
+    )
+    durations_hours = (
+        case_durations["end"] - case_durations["start"]
+    ).dt.total_seconds() / 3600
+    return pd.DataFrame(
+        [
+            {
+                "cases": int(dataframe["case_id"].nunique()),
+                "events": int(len(dataframe)),
+                "activities": int(dataframe["activity"].nunique()),
+                "variants": int(len(pm4py.get_variants(event_log))),
+                "average_case_duration_hours": float(durations_hours.mean()),
+                "max_case_duration_hours": float(durations_hours.max()),
+            }
+        ],
+        columns=SUMMARY_COLUMNS,
+    )
+
+
 def main() -> None:
     """Discover and save a frequency DFG and an Inductive Miner Petri net."""
     directory = Path(__file__).resolve().parent
+    parser = argparse.ArgumentParser(
+        description="Discover a frequency DFG and Petri net from an event-log CSV."
+    )
+    parser.add_argument(
+        "--input",
+        type=Path,
+        default=directory / "sample_event_log.csv",
+        help="CSV with case_id, activity, and timestamp columns.",
+    )
+    args = parser.parse_args()
+    if not args.input.is_file():
+        parser.error(f"event-log file does not exist: {args.input}")
+
     output_directory = directory / "output"
     output_directory.mkdir(parents=True, exist_ok=True)
-    dataframe, event_log = read_event_log(directory / "sample_event_log.csv")
+    try:
+        dataframe, event_log = read_event_log(args.input)
+    except ValueError as error:
+        parser.error(str(error))
 
     dfg, start_activities, end_activities = pm4py.discover_dfg(event_log)
     dfg_path = output_directory / "dfg.png"
@@ -218,11 +280,24 @@ def main() -> None:
         petri_net_path,
     )
 
-    print(f"Cases: {dataframe['case_id'].nunique()}")
-    print(f"Activities: {dataframe['activity'].nunique()}")
-    print(f"Variants: {len(pm4py.get_variants(event_log))}")
+    summary_path = output_directory / "discovery_summary.csv"
+    summary = build_discovery_summary(dataframe, event_log)
+    summary.to_csv(summary_path, index=False)
+    print(f"Cases: {summary.loc[0, 'cases']}")
+    print(f"Events: {summary.loc[0, 'events']}")
+    print(f"Activities: {summary.loc[0, 'activities']}")
+    print(f"Variants: {summary.loc[0, 'variants']}")
+    print(
+        "Average case duration: "
+        f"{summary.loc[0, 'average_case_duration_hours']:.2f} hours"
+    )
+    print(
+        "Maximum case duration: "
+        f"{summary.loc[0, 'max_case_duration_hours']:.2f} hours"
+    )
     print(f"DFG saved to: {dfg_path}")
     print(f"Petri net saved to: {petri_net_path}")
+    print(f"Discovery summary saved to: {summary_path}")
 
 
 if __name__ == "__main__":
