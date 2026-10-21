@@ -29,11 +29,12 @@ BigQuery table path in a query before running it against a real table.
 | Mid-review | Rank frequent patient activity variants and visualize their combined directly-follows graph. | `process_mining/major_paths.py` | `process_mining/output/top_variants.csv`; `process_mining/output/major_paths.png` |
 | Week 3 | Calculate directly-follows waiting-time metrics and flag the three highest-mean transitions. | `process_mining/bottleneck_analysis.py` | `process_mining/output/bottlenecks.csv`; `process_mining/output/performance_dfg.png`; `process_mining/output/top_10_slowest_transitions.png` |
 | Supporting analysis | Calculate ranked bottleneck metrics with optional `department` and `patient_group` breakdowns; provide a synthetic verification mode. | `process_mining/bottlenecks.py` | `process_mining/output/ranked_bottlenecks.csv`; `process_mining/output/ranked_bottlenecks.png` |
-| Supporting analysis | Replay each case against the fixed ideal pathway and report per-case deviations and token-replay fitness. | `process_mining/conformance_check.py` | `process_mining/output/conformance_results.csv` |
-| Supporting analysis | Calculate transition metrics, rank slow transitions, and count exact matches to the ideal activity sequence in BigQuery. | `sql/04_bottleneck_metrics.sql`; `sql/05_bottlenecks.sql`; `sql/06_conformance_summary.sql` | BigQuery query result sets; no local output file is written by the SQL files. |
+| Week 4 | Replay each case against the fixed ideal pathway; flag compliance and export per-case deviations and token-replay fitness. | `process_mining/conformance_check.py`; `sql/06_conformance_summary.sql` | `process_mining/output/conformance_results.csv`; BigQuery summary rows |
+| BigQuery support | Calculate transition metrics and summarize compliant cases with ranked deviation types. | `sql/04_bottleneck_metrics.sql`; `sql/05_bottlenecks.sql`; `sql/06_conformance_summary.sql` | BigQuery query result sets; no local output file is written by the SQL files. |
 
-The scope table describes the files present in this repository. The supporting
-analysis rows have no week assigned in the project files.
+The supporting-analysis row documents the alternate bottleneck analyzer.
+The BigQuery-support row lists the SQL versions that complement the dated
+Python assignment work.
 
 ## Folder tree
 
@@ -51,6 +52,7 @@ CareFlow-Clinical-Pathway-Process-Mining/
 |   `-- output/
 |       |-- dfg.png
 |       |-- petri_net.png
+|       |-- discovery_summary.csv
 |       |-- major_paths.png
 |       |-- top_variants.csv
 |       |-- bottlenecks.csv
@@ -58,6 +60,8 @@ CareFlow-Clinical-Pathway-Process-Mining/
 |       |-- performance_dfg.png
 |       |-- top_10_slowest_transitions.png
 |       `-- conformance_results.csv
+|-- tests/
+|   `-- test_process_mining.py
 `-- sql/
     |-- 04_bottleneck_metrics.sql
     |-- 05_bottlenecks.sql
@@ -99,7 +103,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-The scripts use Python packages listed in `requirements.txt`:
+The scripts and tests use Python packages listed in `requirements.txt`:
 
 | Package | Role in the repository |
 | --- | --- |
@@ -107,6 +111,7 @@ The scripts use Python packages listed in `requirements.txt`:
 | `pandas` | CSV event-log handling, ordering, grouping, and tabular outputs. |
 | `matplotlib` | PNG charts and graph rendering. |
 | `networkx` | DFG and Petri-net graph layouts used in `process_discovery.py`. |
+| `pytest` | Focused automated checks for variants, timing metrics, and conformance exports. |
 
 The manifest does not pin package versions or state a supported Python
 version. Use a Python installation compatible with the packages installed
@@ -126,9 +131,11 @@ Graphviz executable. Graphviz is therefore optional for the scripts
 documented here.
 
 If another PM4Py rendering path or a local workflow you use requires the
-Graphviz command-line tools, install Graphviz for Windows and make its `bin`
-directory available on `PATH`. Then open a new PowerShell window and check
-that Windows can find it:
+Graphviz command-line tools, download the Windows package from
+[graphviz.org/download](https://graphviz.org/download/), install it, and add
+its `bin` directory (commonly `C:\Program Files\Graphviz\bin`) to the
+Windows `PATH`. Open a new PowerShell window and check that Windows can find
+the executable:
 
 ```powershell
 dot -V
@@ -155,6 +162,19 @@ python -c "import matplotlib, networkx, pandas, pm4py; print('Imports OK')"
 Activate `.venv` before installing or running the project so that `pip` and
 `python` use the same environment.
 
+### Run the tests
+
+From the repository root, run the focused synthetic tests with:
+
+```powershell
+python -m pytest -q tests\test_process_mining.py
+```
+
+The tests check variant ranking and coverage, transition wait statistics,
+timestamp-row error reporting, conformance deviation labels, and the CSV
+output column contracts. They use synthetic cases and do not require patient
+data.
+
 ## Input CSV format
 
 The Python event-log readers require these three CSV columns:
@@ -167,7 +187,8 @@ The Python event-log readers require these three CSV columns:
 
 The header spelling is significant. The Python readers reject missing
 required columns, empty case identifiers, empty activity values, empty
-timestamps, and timestamps that cannot be parsed.
+timestamps, and timestamps that cannot be parsed. Timestamp errors identify
+the CSV row number (including the header) and the invalid value.
 
 The sample file uses ISO-8601 UTC timestamps with a trailing `Z`. This is a
 valid example of the expected structure:
@@ -217,7 +238,10 @@ sequence once and in order. The conformance checker also records a skipped
 activity, a repeated activity, or an out-of-order activity when applicable.
 
 This is the pathway encoded in the current files, not a configurable model
-loaded from a separate pathway definition.
+loaded from a separate pathway definition. The conformance CSV reports every
+applicable deviation label: `skipped`, `repeated`, `out_of_order`, and
+`extra_activity`. Multiple labels are separated with semicolons; a compliant
+case has `deviation_type` set to `none`.
 
 ## How to run each script
 
@@ -228,32 +252,31 @@ The examples use PowerShell's `.\` path syntax.
 
 ```powershell
 python .\process_mining\process_discovery.py
+python .\process_mining\process_discovery.py --input .\path\to\event_log.csv
 ```
 
-The script has no command-line arguments. It reads
-`process_mining/sample_event_log.csv`, checks and parses the required fields,
-builds the PM4Py event log, and writes the frequency DFG and Petri-net PNGs.
-It prints the distinct case, activity, and variant counts and the output
-paths.
-
-To run discovery on a different file, replace the sample path in the script
-or use a copy of the expected sample at that path; this script does not
-currently expose an `--input` argument.
+The sample CSV is the default. `--input` can point to another CSV using the
+same required columns. The script reports case, event, activity, variant,
+and case-duration metrics; it writes the metrics to
+`process_mining/output/discovery_summary.csv` as well as the frequency DFG
+and Inductive Miner Petri-net images.
 
 ### Summarize major paths: `major_paths.py`
 
 ```powershell
 python .\process_mining\major_paths.py
+python .\process_mining\major_paths.py --input .\path\to\event_log.csv --top 8 --coverage 0.9
 ```
 
-This script also has no command-line arguments. It reads the same checked-in
-sample event log and ranks up to five activity variants by case count. It
-writes a CSV with rank, variant text, case count, and percentage of cases,
-then renders a DFG using cases belonging to those leading variants.
+The script defaults to the sample event log, a maximum of five variants,
+and a cumulative coverage target of `0.8` (80%). Selection stops when either
+the coverage target is reached or the `--top` limit is reached. The CSV
+reports rank, complete variant, case count, and percentage of all cases.
+The graph is discovered only from cases belonging to the selected variants.
 
-The `TOP_VARIANTS` constant is set to `5`. The generated DFG is a combined
-view of the selected cases; the CSV is the place to read each complete
-ranked sequence and its count.
+Set `--coverage` to a fraction greater than zero and at most one. If the top-N
+limit is reached before the target, the script says so in its plain-English
+summary.
 
 ### Measure bottlenecks: `bottleneck_analysis.py`
 
@@ -322,15 +345,19 @@ The verification outputs are created in a temporary directory, not in
 
 ```powershell
 python .\process_mining\conformance_check.py
+python .\process_mining\conformance_check.py --input .\path\to\event_log.csv
 ```
 
-The script reads `process_mining/sample_event_log.csv` and constructs the
-ideal Petri net in code. It performs PM4Py token replay, reports case counts
-and mean trace fitness, and writes one result row per case to
-`process_mining/output/conformance_results.csv`.
+The sample CSV is the default. Use `--input` to choose another event log.
+The script constructs the ideal Petri net in code and performs PM4Py
+token-based replay. The output CSV has one flat row per case with
+`case_id`, `fitness_score`, `is_compliant`, `deviation_type`,
+`trace_variant`, and `duration_hours`.
 
-The script has no command-line arguments. It combines replay fitness with an
-exact activity-sequence check when deciding `is_conforming`.
+`fitness_score` is a token-replay fitness value: **1.0 means perfect replay;
+it is not a percentage**. `is_compliant` is stricter: it is true only when
+the complete activity sequence exactly matches the ideal pathway and PM4Py
+reports a fit replay. Fitness is not a measure of clinical severity.
 
 ### Run BigQuery SQL files
 
@@ -353,6 +380,7 @@ All local generated analysis files belong under
 | --- | --- | --- |
 | `process_mining/output/dfg.png` | `process_discovery.py` | Frequency DFG with observed start and end activity counts and edge frequencies. |
 | `process_mining/output/petri_net.png` | `process_discovery.py` | Petri net discovered with PM4Py's Inductive Miner. |
+| `process_mining/output/discovery_summary.csv` | `process_discovery.py` | One-row counts and average / maximum case duration in hours. |
 | `process_mining/output/top_variants.csv` | `major_paths.py` | Up to five ranked variants with case counts and percentages. |
 | `process_mining/output/major_paths.png` | `major_paths.py` | Frequency DFG discovered from cases in the leading variants. |
 | `process_mining/output/bottlenecks.csv` | `bottleneck_analysis.py` | All observed transition pairs, waiting-time metrics, rank, and top-three flag. |
@@ -360,7 +388,7 @@ All local generated analysis files belong under
 | `process_mining/output/top_10_slowest_transitions.png` | `bottleneck_analysis.py` | Horizontal chart of up to ten transitions with the largest mean waits. |
 | `process_mining/output/ranked_bottlenecks.csv` | `bottlenecks.py` | Ranked transition metrics for all and any available dimension scopes. |
 | `process_mining/output/ranked_bottlenecks.png` | `bottlenecks.py` | Horizontal chart of up to ten ungrouped transitions. |
-| `process_mining/output/conformance_results.csv` | `conformance_check.py` | Per-case activity sequence, replay fitness, exact conformance flag, and deviations. |
+| `process_mining/output/conformance_results.csv` | `conformance_check.py` | Flat per-case fitness, compliance flag, deviation types, variant, and duration in hours. |
 
 The output directory currently includes `bottlenecks_sample.csv`, which is
 an example table with `from_activity`, `to_activity`, average and median
@@ -463,8 +491,9 @@ inappropriate.
 
 The Python conformance checker token-replays each trace against the
 five-activity ideal Petri net. It writes the PM4Py `trace_fitness` value to
-`fitness_score`, and computes `is_conforming` using both replay fit and
-exact sequence equality.
+`fitness_score`, and computes `is_compliant` using both replay fit and exact
+sequence equality. The CSV also includes `trace_variant` and
+`duration_hours`.
 
 A fitness value of `1.0` means a perfect replay of that trace against the
 model. It is a fitness score, **not a percentage**. For example, `0.8`
@@ -473,14 +502,15 @@ must not be described as “80% of the activities were correct.”
 The overall fitness printed by the script is the arithmetic mean of the
 per-trace fitness scores. It is not a clinical severity rating.
 
-The `deviations` field lists missing activities (`skipped`), repeated
-activities (`repeated`), activities outside the ideal model (`unexpected`),
-or an order reversal (`out of order`) when present.
+The `deviation_type` field lists all detected deviation labels: missing
+activities (`skipped`), repeated ideal activities (`repeated`), activity
+order reversals (`out_of_order`), and activities outside the ideal pathway
+(`extra_activity`). Labels are semicolon-separated if a trace has multiple
+deviation types; a fully compliant trace uses `none`.
 
-The SQL conformance query takes a stricter route: it classifies a case as
-conforming only when its timestamp-ordered activity array contains exactly
-five activities in the exact ideal order. It returns total, conforming, and
-non-conforming case counts; it does not calculate token-replay fitness.
+The SQL conformance query applies exact sequence matching and returns a
+compliance summary plus ranked counts by deviation type. It does not
+calculate token-replay fitness.
 
 ## SQL files
 
@@ -522,9 +552,11 @@ This query validates the required columns, orders each case's activity
 array by timestamp and activity text, and compares it with the exact ideal
 sequence.
 
-The returned summary consists of `total_cases`, `conforming_cases`, and
-`non_conforming_cases`. It performs exact sequence matching and does not
-return per-case rows or a fitness score.
+The result contains one `compliance_summary` row with total, compliant, and
+non-compliant case counts, followed by ranked `deviation_type` rows. Each
+case contributes at most once to each applicable deviation category. SQL
+does not calculate token-replay fitness; use the Python per-case CSV for
+fitness scores and Power BI detail.
 
 ## Power BI import
 
@@ -546,7 +578,7 @@ Useful CSV tables include:
 | `top_variants.csv` | `rank`, `variant`, `case_count`, `percentage`. |
 | `bottlenecks.csv` | `from_activity`, `to_activity`, transition count, waiting-time measures, rank, and top-three flag. |
 | `ranked_bottlenecks.csv` | Scope, group value, rank, transition names, average / median / maximum waits, and counts. |
-| `conformance_results.csv` | `case_id`, `activities`, `fitness_score`, `is_conforming`, and `deviations`. |
+| `conformance_results.csv` | `case_id`, `fitness_score`, `is_compliant`, `deviation_type`, `trace_variant`, and `duration_hours`. |
 
 The `bottlenecks.csv` schema and `ranked_bottlenecks.csv` schema differ.
 Choose the one that matches the script you ran and inspect its header row.
@@ -578,7 +610,7 @@ Keep waiting-time columns in hours unless you explicitly convert them.
 Retain the original column name or clearly label the converted unit.
 
 Treat `fitness_score` as a replay fitness value from 0 to 1 in this output,
-not as a percent-correct measure. Use `is_conforming` for the exact
+not as a percent-correct measure. Use `is_compliant` for the exact
 conformance classification made by the Python script.
 
 For `ranked_bottlenecks.csv`, use `group_by` and `group_value` to distinguish
@@ -589,12 +621,13 @@ the ungrouped rows from optional dimension-level rows.
 | Symptom | Likely cause | Resolution |
 | --- | --- | --- |
 | `python` or `py` is not recognized. | Python is not installed or its launcher is not available in this PowerShell session. | Install or select an available Python interpreter, then retry `py --version` or `python --version`. |
-| `ModuleNotFoundError` for PM4Py, pandas, Matplotlib, or NetworkX. | Dependencies were not installed into the active interpreter. | Activate `.venv` and run `pip install -r requirements.txt`. |
+| `ModuleNotFoundError` for PM4Py, pandas, Matplotlib, NetworkX, or pytest. | Dependencies were not installed into the active interpreter. | Activate `.venv` and run `pip install -r requirements.txt`. |
 | The imports work in one terminal but not another. | The two terminals are using different Python environments. | Activate `.\.venv\Scripts\Activate.ps1` in the terminal used to run the script. |
 | PowerShell blocks virtual-environment activation. | The current PowerShell execution-policy configuration blocks the activation script. | Use an approved local execution-policy approach or run the environment's Python executable directly as `.\.venv\Scripts\python.exe`. |
 | `Event log is missing required columns`. | The CSV header does not include one or more required exact names. | Use `case_id`, `activity`, and `timestamp` as the CSV headers. |
 | The script reports an empty `case_id` or `activity`. | At least one row has a blank required identifier or activity. | Correct or remove the invalid row in the source CSV and rerun. |
 | Timestamp parsing fails. | A timestamp is blank or is not parseable by the Python reader. | Provide parseable timestamps, preferably ISO-8601 values like `2026-10-01T08:00:00Z`. |
+| The timestamp error names one or more CSV rows. | The timestamp field is blank or cannot be parsed in those rows. | Check each reported row number (the header is row 1), correct the timestamp, and rerun. |
 | A transition chart has no bars. | The input may contain no consecutive events in a case, so there are no transitions to aggregate. | Check that cases have events and that `case_id` values group the intended event sequences. |
 | Same-time events lead to an unexpected transition. | Tied event timestamps require a deterministic ordering rule. | Review the tied activity labels and source-row order; the scripts use activity and/or row order to break ties. |
 | `bottlenecks.py` says to provide `--input`. | This script requires an input path unless run in verification mode. | Pass `--input .\process_mining\sample_event_log.csv` or use `--verify`. |
@@ -636,8 +669,8 @@ git diff --check
 git diff -- README.md
 ```
 
-Stage only the files intended for the change. For this documentation
-rewrite:
+Stage only the files intended for the change. For a documentation-only
+change:
 
 ```powershell
 git add README.md
@@ -645,15 +678,16 @@ git diff --cached --check
 git diff --cached -- README.md
 ```
 
-Commit after reviewing the staged diff:
+Commit the documentation change after reviewing the staged diff:
 
 ```powershell
-git commit -m "Rewrite process mining README"
+git commit -m "Document Member 3 process mining workflow"
 ```
 
-If the branch needs to be published to the configured `origin` remote:
+Update the branch from its remote before publishing:
 
 ```powershell
+git pull origin m3-process-mining
 git push -u origin m3-process-mining
 ```
 
