@@ -41,14 +41,28 @@ def load_event_log(input_path: Path) -> tuple[pd.DataFrame, EventLog]:
         dataframe[column] = dataframe[column].astype("string").str.strip()
         invalid = dataframe[column].isna() | dataframe[column].eq("")
         if invalid.any():
-            raise ValueError(f"Event log contains an empty {column} value")
+            rows = ", ".join(str(int(index) + 2) for index in dataframe.index[invalid])
+            raise ValueError(
+                f"Event log contains an empty {column} value on CSV row(s): {rows}"
+            )
 
-    timestamps = dataframe["timestamp"].astype("string").str.strip()
-    if (dataframe["timestamp"].isna() | timestamps.eq("")).any():
-        raise ValueError("Event log contains an empty timestamp value")
-    dataframe["timestamp"] = pd.to_datetime(
-        dataframe["timestamp"], utc=True, errors="raise"
+    raw_timestamps = dataframe["timestamp"]
+    parsed_timestamps = pd.to_datetime(
+        raw_timestamps, utc=True, errors="coerce"
     )
+    invalid_timestamps = parsed_timestamps.isna()
+    if invalid_timestamps.any():
+        bad_rows = []
+        for index in dataframe.index[invalid_timestamps]:
+            value = raw_timestamps.loc[index]
+            reason = "empty" if pd.isna(value) or not str(value).strip() else "invalid"
+            bad_rows.append(f"row {int(index) + 2} ({reason}: {value!r})")
+        raise ValueError(
+            "Invalid timestamp value(s) in event log: "
+            + "; ".join(bad_rows)
+            + ". Rows include the CSV header."
+        )
+    dataframe["timestamp"] = parsed_timestamps
     dataframe["_source_order"] = range(len(dataframe))
     dataframe = dataframe.sort_values(
         ["case_id", "timestamp", "activity", "_source_order"],
@@ -229,7 +243,10 @@ def main() -> None:
     if not args.input.is_file():
         parser.error(f"event-log file does not exist: {args.input}")
 
-    dataframe, event_log = load_event_log(args.input)
+    try:
+        dataframe, event_log = load_event_log(args.input)
+    except ValueError as error:
+        parser.error(str(error))
     metrics = calculate_metrics(dataframe)
 
     csv_path = output_directory / "bottlenecks.csv"

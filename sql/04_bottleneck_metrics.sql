@@ -1,5 +1,7 @@
 -- Calculate comparable directly-follows waiting-time metrics for every pair.
 -- Replace the example table path with the BigQuery event-log table.
+-- Output column names and order match bottleneck_analysis.py's CSV contract.
+-- Ties use activity text for deterministic ordering because no event ID is required.
 ASSERT (
   SELECT COUNTIF(
     case_id IS NULL
