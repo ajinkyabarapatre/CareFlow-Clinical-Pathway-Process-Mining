@@ -1,6 +1,8 @@
 """Calculate and visualize waiting-time bottlenecks in an event log."""
 
 import argparse
+import logging
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +10,7 @@ import pm4py
 from pm4py.objects.log.obj import EventLog
 
 
+LOGGER = logging.getLogger(__name__)
 REQUIRED_COLUMNS = ("case_id", "activity", "timestamp")
 OUTPUT_COLUMNS = (
     "from_activity",
@@ -19,14 +22,44 @@ OUTPUT_COLUMNS = (
     "p90_waiting_time_hours",
     "bottleneck_rank",
     "is_bottleneck",
+    "avg_wait_minutes",
+    "median_wait_minutes",
+    "p90_wait_minutes",
+    "max_wait_minutes",
+    "pct_of_all_transitions",
+)
+POWER_BI_COLUMNS = (
+    "from_activity",
+    "to_activity",
+    "transition_count",
+    "avg_wait_minutes",
+    "median_wait_minutes",
+    "p90_wait_minutes",
+    "max_wait_minutes",
+    "pct_of_all_transitions",
+    "bottleneck_rank",
 )
 TOP_TRANSITIONS = 10
 BOTTLENECK_COUNT = 3
 
 
 def load_event_log(input_path: Path) -> tuple[pd.DataFrame, EventLog]:
-    """Load, validate, order, and convert a CSV event log for PM4Py."""
+    """Load a CSV event log, accepting either the dbt or sample column names."""
     dataframe = pd.read_csv(input_path)
+    column_aliases = {
+        "case_id": ("case_id", "Case_ID"),
+        "activity": ("activity", "Activity_Name"),
+        "timestamp": ("timestamp", "Timestamp"),
+    }
+    rename_columns = {}
+    for canonical_name, aliases in column_aliases.items():
+        matching = next(
+            (column for column in aliases if column in dataframe.columns), None
+        )
+        if matching is not None:
+            rename_columns[matching] = canonical_name
+    dataframe = dataframe.rename(columns=rename_columns)
+
     missing_columns = [
         column for column in REQUIRED_COLUMNS if column not in dataframe.columns
     ]
@@ -65,9 +98,10 @@ def load_event_log(input_path: Path) -> tuple[pd.DataFrame, EventLog]:
     dataframe["timestamp"] = parsed_timestamps
     dataframe["_source_order"] = range(len(dataframe))
     dataframe = dataframe.sort_values(
-        ["case_id", "timestamp", "activity", "_source_order"],
+        ["case_id", "timestamp", "_source_order"],
         kind="stable",
     )
+    _validate_positive_transition_durations(dataframe)
     formatted = pm4py.format_dataframe(
         dataframe,
         case_id="case_id",
@@ -78,9 +112,9 @@ def load_event_log(input_path: Path) -> tuple[pd.DataFrame, EventLog]:
 
 
 def calculate_metrics(dataframe: pd.DataFrame) -> pd.DataFrame:
-    """Calculate ranked waiting-time metrics for each directly-follows pair."""
+    """Calculate ranked, positive-duration metrics for each activity transition."""
     ordered = dataframe.sort_values(
-        ["case_id", "timestamp", "activity", "_source_order"],
+        ["case_id", "timestamp", "_source_order"],
         kind="stable",
     ).copy()
     case_events = ordered.groupby("case_id", sort=False)
@@ -91,6 +125,7 @@ def calculate_metrics(dataframe: pd.DataFrame) -> pd.DataFrame:
     transitions["waiting_time_hours"] = (
         transitions["next_timestamp"] - transitions["timestamp"]
     ).dt.total_seconds() / 3600
+    transitions = transitions.loc[transitions["waiting_time_hours"] > 0].copy()
 
     if transitions.empty:
         return pd.DataFrame(columns=OUTPUT_COLUMNS)
@@ -114,14 +149,85 @@ def calculate_metrics(dataframe: pd.DataFrame) -> pd.DataFrame:
             }
         )
     )
+    total_transitions = int(metrics["transition_count"].sum())
+    metrics["avg_wait_minutes"] = metrics["mean_waiting_time_hours"] * 60
+    metrics["median_wait_minutes"] = metrics["median_waiting_time_hours"] * 60
+    metrics["p90_wait_minutes"] = metrics["p90_waiting_time_hours"] * 60
+    metrics["max_wait_minutes"] = metrics["max_waiting_time_hours"] * 60
+    metrics["pct_of_all_transitions"] = (
+        metrics["transition_count"] / total_transitions * 100
+        if total_transitions
+        else 0.0
+    )
     metrics = metrics.sort_values(
-        ["mean_waiting_time_hours", "from_activity", "to_activity"],
-        ascending=[False, True, True],
+        [
+            "avg_wait_minutes",
+            "transition_count",
+            "from_activity",
+            "to_activity",
+        ],
+        ascending=[False, False, True, True],
         kind="stable",
     ).reset_index(drop=True)
     metrics["bottleneck_rank"] = range(1, len(metrics) + 1)
     metrics["is_bottleneck"] = metrics["bottleneck_rank"] <= BOTTLENECK_COUNT
-    return metrics.loc[:, OUTPUT_COLUMNS]
+    return metrics.loc[:, list(OUTPUT_COLUMNS)]
+
+
+def _validate_positive_transition_durations(dataframe: pd.DataFrame) -> None:
+    """Reject event logs whose consecutive events have zero or negative waits."""
+    ordered = dataframe.sort_values(
+        ["case_id", "timestamp", "_source_order"],
+        kind="stable",
+    )
+    gaps = ordered.groupby("case_id", sort=False)["timestamp"].diff().dropna()
+    invalid_gaps = gaps <= pd.Timedelta(0)
+    if invalid_gaps.any():
+        raise ValueError(
+            "Consecutive events must have strictly increasing timestamps; "
+            f"found {int(invalid_gaps.sum())} zero or negative duration(s)"
+        )
+
+
+def validate_transition_sanity(
+    dataframe: pd.DataFrame, metrics: pd.DataFrame
+) -> None:
+    """Check that every case's consecutive event pair is counted exactly once."""
+    expected_count = len(dataframe) - int(dataframe["case_id"].nunique())
+    actual_count = int(metrics["transition_count"].sum())
+    if actual_count != expected_count:
+        raise AssertionError(
+            f"Expected {expected_count} transitions from events and cases, "
+            f"but calculated {actual_count}"
+        )
+    if (metrics["avg_wait_minutes"] < 0).any():
+        raise AssertionError("Transition metrics must not contain negative waits")
+
+
+def cross_check_pm4py(metrics: pd.DataFrame, event_log: EventLog) -> None:
+    """Verify pandas mean waits against PM4Py's performance directly-follows graph."""
+    performance_dfg, _, _ = pm4py.discover_performance_dfg(event_log)
+    pandas_means = {
+        (row.from_activity, row.to_activity): float(row.avg_wait_minutes) * 60
+        for row in metrics.itertuples(index=False)
+    }
+    if set(performance_dfg) != set(pandas_means):
+        raise AssertionError(
+            "Pandas transitions do not match the PM4Py performance DFG"
+        )
+    for transition, performance in performance_dfg.items():
+        pm4py_mean_seconds = float(performance["mean"])
+        if not math.isclose(
+            pandas_means[transition],
+            pm4py_mean_seconds,
+            rel_tol=1e-9,
+            abs_tol=1e-6,
+        ):
+            raise AssertionError(
+                f"Mean wait mismatch for {transition!r}: pandas="
+                f"{pandas_means[transition]} seconds, "
+                f"PM4Py={pm4py_mean_seconds} seconds"
+            )
 
 
 def write_performance_dfg(event_log: EventLog, output_path: Path) -> None:
@@ -227,6 +333,7 @@ def write_top_transitions_chart(
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     script_directory = Path(__file__).resolve().parent
     output_directory = script_directory / "output"
 
@@ -248,19 +355,36 @@ def main() -> None:
     except ValueError as error:
         parser.error(str(error))
     metrics = calculate_metrics(dataframe)
+    validate_transition_sanity(dataframe, metrics)
+    cross_check_pm4py(metrics, event_log)
 
-    csv_path = output_directory / "bottlenecks.csv"
+    csv_path = output_directory / "bottleneck_transitions.csv"
+    legacy_csv_path = output_directory / "bottlenecks.csv"
     dfg_path = output_directory / "performance_dfg.png"
     chart_path = output_directory / "top_10_slowest_transitions.png"
     output_directory.mkdir(parents=True, exist_ok=True)
-    metrics.to_csv(csv_path, index=False)
+    power_bi_metrics = metrics.head(TOP_TRANSITIONS).loc[
+        :, list(POWER_BI_COLUMNS)
+    ]
+    power_bi_metrics.to_csv(csv_path, index=False)
+    metrics.to_csv(legacy_csv_path, index=False)
     write_performance_dfg(event_log, dfg_path)
     write_top_transitions_chart(metrics, chart_path)
 
-    print(f"Analyzed {len(dataframe)} events across {len(event_log)} cases.")
-    print(f"Wrote {len(metrics)} transition rows to {csv_path}")
-    print(f"Wrote the performance DFG to {dfg_path}")
-    print(f"Wrote the top-transition chart to {chart_path}")
+    LOGGER.info("Analyzed %s events across %s cases.", len(dataframe), len(event_log))
+    LOGGER.info("Cross-checked pandas transition means against PM4Py.")
+    LOGGER.info(
+        "Wrote %s top transition rows to %s", len(power_bi_metrics), csv_path
+    )
+    LOGGER.info("Wrote the legacy ranked transition CSV to %s", legacy_csv_path)
+    LOGGER.info("Wrote the performance DFG to %s", dfg_path)
+    LOGGER.info("Wrote the top-transition chart to %s", chart_path)
+    LOGGER.info(
+        "Top 10 transitions by mean wait:\n%s",
+        metrics.head(TOP_TRANSITIONS)[
+            ["from_activity", "to_activity", "transition_count", "avg_wait_minutes"]
+        ].to_string(index=False),
+    )
 
 
 if __name__ == "__main__":
