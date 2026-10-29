@@ -1,46 +1,52 @@
 # CareFlow: Clinical Pathway Process Mining - Project Report
 
-## 1. Introduction
-- Problem: hospital managers do not know why Emergency Room waiting times are high. Average wait time does not show the real steps a patient goes through.
-- Goal: use process mining on timestamped hospital event data to find hidden bottlenecks and show them in a dashboard.
+## \## 1. Introduction
 
-## 2. Team and Roles
-- Member 1: data generation and loading (branch m1-data-generation)
-- Member 2: BigQuery and dbt (branch m2-warehouse-dbt)
-- Member 3: process mining (branch m3-process-mining)
-- Member 4: dashboard and documentation (branch m4-dashboard-docs)
+## In hospitals, waiting time in the Emergency Room is a big problem. Managers usually look at the average waiting time, but an average does not show what really happens to a patient from the moment they arrive until they leave. Patients can be sent back to an earlier step, wait too long between steps, or skip steps, and an average hides all of this.
 
-## 3. Tools Used
-Python, Google BigQuery, dbt, PM4Py, Power BI, GitHub
+## 
 
-## 4. Dataset
-- patients.csv: one row per patient, 21 columns (see docs/data_dictionary.md)
-- Data problems found: missing values and 3 duplicate rows
-- It has dates only, so an event log with times has to be built from it
+## CareFlow is our project to solve this. We use process mining, which reads timestamped hospital event data (who did what, and when) and builds a map of the real patient journey. The aim is to find the hidden bottlenecks and show them in a dashboard, so the hospital can take a clear action, such as changing an intake form, to reduce waiting time.
 
-## 5. Method
-### 5.1 Data preparation
-(to be filled: cleaning and event log creation)
-### 5.2 Process discovery
-(to be filled: process map made with PM4Py, script process_mining/discovery.py)
-### 5.3 Bottleneck analysis
-(to be filled)
-### 5.4 Conformance checking
-(to be filled)
+## 
 
-## 6. Dashboard
-- Draft pages built in Power BI: KPI cards, waiting time by disease, filters
-- KPI definitions: dashboard/kpi_definitions.md
-- Layout plan: dashboard/dashboard_layout.md
-(to be filled: final pages, screenshots, insights)
+## \## 2. Team and Roles
 
-## 7. Findings and Recommended Action
-(to be filled after the analysis is done)
+## Our team has four members and one GitHub repository, with a separate branch for each member.
 
-## 8. Challenges
-- Team Git setup at the start
-- The dashboard depends on the event log from the data team
-- Missing values in the dataset
+## \- Member 1: creates the data and loads it into the warehouse (branch m1-data-generation)
 
-## 9. Conclusion
-(to be filled)
+## \- Member 2: BigQuery and dbt data cleaning (branch m2-warehouse-dbt)
+
+## \- Member 3: process mining with PM4Py (branch m3-process-mining)
+
+## \- Member 4: dashboard and documentation (branch m4-dashboard-docs)
+
+## Work is merged into the main branch using pull requests.
+
+## 
+
+## \## 3. Tools Used
+
+## \- Python: scripts for data and process mining
+
+## \- Google BigQuery: stores the event data
+
+## \- dbt: cleans and standardises the data
+
+## \- PM4Py: finds the process map from the event data
+
+## \- Power BI: builds the dashboard
+
+## \- GitHub: version control and teamwork
+
+## 
+
+## \## 4. Dataset
+
+## We use a file called patients.csv with 40,600 rows, one row for each patient, and 21 columns (for example patient type, disease, severity level, doctor, admission date, waiting time and rating). The full list of columns is in docs/data\_dictionary.md.
+
+## 
+
+## We found some problems in the data: missing values in patient\_rating, discharge\_date, blood\_group, area and payment\_method, and 3 duplicate rows. The data also has dates but no time of day, and process mining needs timestamps for each step. So an event log with case ID, activity name and timestamp has to be created from this file, and the times will be simulated. The cleaning and event log creation are done by Member 1 and Member 2.
+
