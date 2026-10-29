@@ -1,5 +1,6 @@
 matplotlib
 pm4py
 pandas
+google-cloud-bigquery
 networkx
 pytest

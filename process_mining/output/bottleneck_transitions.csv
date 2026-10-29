@@ -1,9 +1,6 @@
 from_activity,to_activity,transition_count,avg_wait_minutes,median_wait_minutes,p90_wait_minutes,max_wait_minutes,pct_of_all_transitions,bottleneck_rank
 Treatment,Discharge,4,45.0,45.0,45.0,45.0,25.0,1
-Admission,Diagnosis,1,45.0,45.0,45.0,45.0,6.25,2
 Triage,Treatment,2,37.5,37.5,55.5,60.0,12.5,3
 Diagnosis,Treatment,2,30.0,30.0,30.0,30.0,12.5,4
 Triage,Diagnosis,2,27.500000000000004,27.500000000000004,29.5,30.0,12.5,5
 Admission,Triage,3,15.0,15.0,15.0,15.0,18.75,6
-Diagnosis,Triage,1,15.0,15.0,15.0,15.0,6.25,7
-Triage,Triage,1,5.0,5.0,5.0,5.0,6.25,8

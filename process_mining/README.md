@@ -16,20 +16,28 @@ environment and run:
 python .\process_mining\bottleneck_analysis.py
 ```
 
-To select another event-log CSV:
+To read a different CSV file instead of the bundled sample:
 
 ```powershell
 python .\process_mining\bottleneck_analysis.py `
   --input .\path\to\event_log.csv
 ```
 
-The CSV must contain one of each corresponding pair of column names:
+To query a BigQuery table instead of the CSV fallback, set the table name in
+`CAREFLOW_BIGQUERY_TABLE` or pass it explicitly:
+
+```powershell
+$env:CAREFLOW_BIGQUERY_TABLE = 'project.dataset.event_log'
+python .\process_mining\bottleneck_analysis.py --bigquery-table `project.dataset.event_log`
+```
+
+The input must contain one of each corresponding pair of column names:
 `case_id` or `Case_ID`, `activity` or `Activity_Name`, and `timestamp` or
 `Timestamp`. Case IDs and activities must be populated, timestamps must be
 valid, and consecutive event timestamps must increase strictly. The script
-checks the calculated transition count against `events - cases` and verifies
-the mean transition waits against PM4Py's performance DFG before writing its
-results.
+checks the calculated transition count against `events - cases`, rejects any
+negative transition durations, and verifies the mean transition waits against
+PM4Py's performance DFG before writing its results.
 
 ## Outputs
 

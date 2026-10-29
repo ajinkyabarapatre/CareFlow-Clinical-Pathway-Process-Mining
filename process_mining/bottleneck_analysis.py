@@ -3,6 +3,7 @@
 import argparse
 import logging
 import math
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -11,6 +12,8 @@ from pm4py.objects.log.obj import EventLog
 
 
 LOGGER = logging.getLogger(__name__)
+DEFAULT_BIGQUERY_TABLE = "project.dataset.event_log"
+MIN_TRANSITION_COUNT = 2
 REQUIRED_COLUMNS = ("case_id", "activity", "timestamp")
 OUTPUT_COLUMNS = (
     "from_activity",
@@ -43,9 +46,18 @@ TOP_TRANSITIONS = 10
 BOTTLENECK_COUNT = 3
 
 
-def load_event_log(input_path: Path) -> tuple[pd.DataFrame, EventLog]:
-    """Load a CSV event log, accepting either the dbt or sample column names."""
-    dataframe = pd.read_csv(input_path)
+def load_event_log(
+    input_path: Path | str | None,
+    *,
+    bigquery_table: str | None = None,
+) -> tuple[pd.DataFrame, EventLog]:
+    """Load the event log from BigQuery when configured, otherwise from CSV."""
+    if bigquery_table:
+        dataframe = load_event_log_from_bigquery(bigquery_table)
+    else:
+        if input_path is None:
+            raise ValueError("An event-log CSV path or BigQuery table is required")
+        dataframe = pd.read_csv(input_path)
     column_aliases = {
         "case_id": ("case_id", "Case_ID"),
         "activity": ("activity", "Activity_Name"),
@@ -109,6 +121,36 @@ def load_event_log(input_path: Path) -> tuple[pd.DataFrame, EventLog]:
         timestamp_key="timestamp",
     )
     return formatted, pm4py.convert_to_event_log(formatted)
+
+
+def load_event_log_from_bigquery(table_name: str) -> pd.DataFrame:
+    """Load the event log from a BigQuery table using the repo's standard names."""
+    try:
+        from google.cloud import bigquery
+    except ImportError as exc:
+        raise ImportError(
+            "google-cloud-bigquery is required for BigQuery loading. "
+            "Install requirements.txt or pass --input with a CSV file."
+        ) from exc
+
+    normalized_table = table_name.strip().strip("`")
+    if not normalized_table:
+        raise ValueError("BigQuery table name is empty")
+
+    query = f"""
+        SELECT
+          CAST(Case_ID AS STRING) AS case_id,
+          TRIM(CAST(Activity_Name AS STRING)) AS activity,
+          Timestamp AS timestamp
+        FROM `{normalized_table}`
+        ORDER BY Case_ID, Timestamp
+    """
+    LOGGER.info("Loading event log from BigQuery table %s", normalized_table)
+    client = bigquery.Client()
+    dataframe = client.query(query).result().to_dataframe()
+    if dataframe.empty:
+        raise ValueError(f"BigQuery table {normalized_table} is empty")
+    return dataframe
 
 
 def calculate_metrics(dataframe: pd.DataFrame) -> pd.DataFrame:
@@ -346,18 +388,35 @@ def main() -> None:
         default=script_directory / "sample_event_log.csv",
         help="CSV event log (default: process_mining/sample_event_log.csv)",
     )
+    parser.add_argument(
+        "--bigquery-table",
+        default=os.getenv("CAREFLOW_BIGQUERY_TABLE", ""),
+        help="Optional BigQuery table to use instead of the CSV fallback, for example project.dataset.event_log.",
+    )
     args = parser.parse_args()
-    if not args.input.is_file():
-        parser.error(f"event-log file does not exist: {args.input}")
 
-    try:
-        dataframe, event_log = load_event_log(args.input)
-    except ValueError as error:
-        parser.error(str(error))
+    bigquery_table = args.bigquery_table.strip() if args.bigquery_table else ""
+    if bigquery_table:
+        try:
+            dataframe, event_log = load_event_log(
+                None,
+                bigquery_table=bigquery_table,
+            )
+        except (ImportError, ValueError) as error:
+            parser.error(str(error))
+    else:
+        if not args.input.is_file():
+            parser.error(f"event-log file does not exist: {args.input}")
+        try:
+            dataframe, event_log = load_event_log(args.input)
+        except ValueError as error:
+            parser.error(str(error))
+
     metrics = calculate_metrics(dataframe)
     validate_transition_sanity(dataframe, metrics)
     cross_check_pm4py(metrics, event_log)
 
+    metrics = metrics.loc[metrics["transition_count"] >= MIN_TRANSITION_COUNT].copy()
     csv_path = output_directory / "bottleneck_transitions.csv"
     legacy_csv_path = output_directory / "bottlenecks.csv"
     dfg_path = output_directory / "performance_dfg.png"
