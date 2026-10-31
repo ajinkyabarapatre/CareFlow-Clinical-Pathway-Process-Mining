@@ -28,16 +28,16 @@ To query a BigQuery table instead of the CSV fallback, set the table name in
 
 ```powershell
 $env:CAREFLOW_BIGQUERY_TABLE = 'project.dataset.event_log'
-python .\process_mining\bottleneck_analysis.py --bigquery-table `project.dataset.event_log`
+python .\process_mining\bottleneck_analysis.py --bigquery-table 'project.dataset.event_log'
 ```
 
 The input must contain one of each corresponding pair of column names:
 `case_id` or `Case_ID`, `activity` or `Activity_Name`, and `timestamp` or
-`Timestamp`. Case IDs and activities must be populated, timestamps must be
-valid, and consecutive event timestamps must increase strictly. The script
-checks the calculated transition count against `events - cases`, rejects any
-negative transition durations, and verifies the mean transition waits against
-PM4Py's performance DFG before writing its results.
+`Timestamp`. Case IDs and activities must be populated and timestamps must be
+valid. The script accepts zero-minute gaps but rejects events that move
+backwards within a case. It checks the calculated transition count against
+`events - cases`, checks that no negative wait is reported, and verifies the
+mean transition waits against PM4Py's performance DFG before writing results.
 
 ## Outputs
 
@@ -45,17 +45,18 @@ All generated files go under `process_mining/output/`:
 
 | File | Contents |
 | --- | --- |
-| `bottleneck_transitions.csv` | Power BI-friendly one-row-per-transition table with transition counts, average/median/90th-percentile/maximum waits in minutes, percentage of all transitions, and rank. |
+| `bottleneck_transitions.csv` | Power BI-friendly one-row-per-transition table with transition counts, average/median/90th-percentile/maximum waits in minutes, percentage of all transitions, rank, and loop-back counts/affected-case percentages. Includes every transition pair, not only the top ten. |
 | `performance_dfg.png` | Performance directly-follows graph with mean elapsed time shown on each edge. |
 | `bottlenecks.csv` | Compatibility export containing the existing ranked metrics in hours and the additional minute and percentage fields. |
 | `top_10_slowest_transitions.png` | Existing chart of up to ten transitions with the highest average wait. |
 
 The query file `sql/05_bottleneck_transitions.sql` contains a BigQuery query
 for the same transition metrics and a second result set for returns to
-previously visited activities, including affected-case percentages. Like the
-other SQL files, it uses the repository's existing placeholder
-`project.dataset.event_log`; replace that table path with the deployed table
-before execution. It expects `Case_ID`, `Activity_Name`, and `Timestamp`.
+previously visited activities, including transition counts and affected-case
+percentages. Like the other SQL files, it uses the repository's existing
+placeholder `project.dataset.event_log`; replace that table path with the
+deployed table before execution. It expects `Case_ID`, `Activity_Name`, and
+`Timestamp`.
 
 ## Findings from the checked-in sample
 

@@ -17,7 +17,7 @@ ASSERT (
 ASSERT (
   SELECT COUNTIF(
     next_timestamp IS NOT NULL
-    AND TIMESTAMP_DIFF(next_timestamp, event_timestamp, MICROSECOND) <= 0
+    AND TIMESTAMP_DIFF(next_timestamp, event_timestamp, MICROSECOND) < 0
   ) = 0
   FROM (
     SELECT
@@ -28,7 +28,7 @@ ASSERT (
       ) AS next_timestamp
     FROM `project.dataset.event_log`
   )
-) AS 'Consecutive event timestamps must increase strictly';
+) AS 'Consecutive event timestamps must not move backwards';
 
 -- Query 1: one row per directly-follows activity pair.
 WITH ordered_events AS (
@@ -48,7 +48,7 @@ WITH ordered_events AS (
   FROM `project.dataset.event_log`
 ),
 transitions AS (
-  -- Exclude each case's final event and all zero or negative elapsed times.
+  -- Exclude each case's final event and negative elapsed times.
   SELECT
     activity_name AS from_activity,
     TRIM(CAST(next_activity_name AS STRING)) AS to_activity,
@@ -56,7 +56,7 @@ transitions AS (
       / 60000000.0 AS wait_minutes
   FROM ordered_events
   WHERE next_activity_name IS NOT NULL
-    AND TIMESTAMP_DIFF(next_timestamp, event_timestamp, MICROSECOND) > 0
+    AND TIMESTAMP_DIFF(next_timestamp, event_timestamp, MICROSECOND) >= 0
 ),
 pair_aggregates AS (
   -- Calculate additive metrics for each observed transition.
@@ -143,7 +143,7 @@ WITH ordered_events AS (
   FROM `project.dataset.event_log`
 ),
 transitions AS (
-  -- Keep only valid consecutive events with a strictly positive duration.
+  -- Keep consecutive events with nonnegative durations.
   SELECT
     case_id,
     event_number,
@@ -151,7 +151,7 @@ transitions AS (
     TRIM(CAST(next_activity_name AS STRING)) AS to_activity
   FROM ordered_events
   WHERE next_activity_name IS NOT NULL
-    AND TIMESTAMP_DIFF(next_timestamp, event_timestamp, MICROSECOND) > 0
+    AND TIMESTAMP_DIFF(next_timestamp, event_timestamp, MICROSECOND) >= 0
 ),
 loop_back_transitions AS (
   -- A transition loops back when its destination occurred earlier in its case.

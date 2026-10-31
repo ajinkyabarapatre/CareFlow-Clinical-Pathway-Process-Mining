@@ -1,6 +1,9 @@
-from_activity,to_activity,transition_count,mean_waiting_time_hours,median_waiting_time_hours,max_waiting_time_hours,p90_waiting_time_hours,bottleneck_rank,is_bottleneck,avg_wait_minutes,median_wait_minutes,p90_wait_minutes,max_wait_minutes,pct_of_all_transitions
-Treatment,Discharge,4,0.75,0.75,0.75,0.75,1,True,45.0,45.0,45.0,45.0,25.0
-Triage,Treatment,2,0.625,0.625,1.0,0.925,3,True,37.5,37.5,55.5,60.0,12.5
-Diagnosis,Treatment,2,0.5,0.5,0.5,0.5,4,False,30.0,30.0,30.0,30.0,12.5
-Triage,Diagnosis,2,0.45833333333333337,0.45833333333333337,0.5,0.4916666666666667,5,False,27.500000000000004,27.500000000000004,29.5,30.0,12.5
-Admission,Triage,3,0.25,0.25,0.25,0.25,6,False,15.0,15.0,15.0,15.0,18.75
+from_activity,to_activity,transition_count,mean_waiting_time_hours,median_waiting_time_hours,max_waiting_time_hours,p90_waiting_time_hours,bottleneck_rank,is_bottleneck,avg_wait_minutes,median_wait_minutes,p90_wait_minutes,max_wait_minutes,pct_of_all_transitions,loop_back_count,loop_back_case_count,total_case_count,pct_of_cases_affected,is_loop_back
+Treatment,Discharge,4,0.75,0.75,0.75,0.75,1,True,45.0,45.0,45.0,45.0,25.0,0,0,4,0.0,False
+Admission,Diagnosis,1,0.75,0.75,0.75,0.75,2,True,45.0,45.0,45.0,45.0,6.25,0,0,4,0.0,False
+Triage,Treatment,2,0.625,0.625,1.0,0.925,3,True,37.5,37.5,55.5,60.0,12.5,0,0,4,0.0,False
+Diagnosis,Treatment,2,0.5,0.5,0.5,0.5,4,False,30.0,30.0,30.0,30.0,12.5,0,0,4,0.0,False
+Triage,Diagnosis,2,0.45833333333333337,0.45833333333333337,0.5,0.4916666666666667,5,False,27.500000000000004,27.500000000000004,29.5,30.0,12.5,0,0,4,0.0,False
+Admission,Triage,3,0.25,0.25,0.25,0.25,6,False,15.0,15.0,15.0,15.0,18.75,0,0,4,0.0,False
+Diagnosis,Triage,1,0.25,0.25,0.25,0.25,7,False,15.0,15.0,15.0,15.0,6.25,0,0,4,0.0,False
+Triage,Triage,1,0.08333333333333333,0.08333333333333333,0.08333333333333333,0.08333333333333333,8,False,5.0,5.0,5.0,5.0,6.25,0,0,4,0.0,False
