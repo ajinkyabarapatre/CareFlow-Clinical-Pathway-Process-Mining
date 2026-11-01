@@ -57,8 +57,7 @@
 The dataset has missing values and duplicate rows, and no time of day. Cleaning and creating the event log (case ID, activity name, timestamp) is done by Member 1 and Member 2. (to be filled when their work is pushed)
 
 ### 5.2 Process discovery
-Member 3 wrote a Python script, process_mining/discovery.py, that uses PM4Py to discover the process map of patient flow. (to be filled: how it works and what the map shows)
-
+Member 3 wrote a Python script, process_mining/discovery.py, for process discovery. The script reads [file or table name] and uses the columns [case ID column], [activity column] and [timestamp column] as the event log. It then uses the PM4Py library to create [a directly-follows graph / a Petri net / other], which shows [how patients move from one step to the next]. The result is saved as [output file name]. [Optional: one sentence on what the map shows, but only if you can see the picture and know what it says.]
 ### 5.3 Bottleneck analysis
 (to be filled: average and longest waiting time between steps)
 
