@@ -1,0 +1,5 @@
+case_id,start_time,end_time,total_duration_minutes,num_events,has_loopback,path_variant
+case-001,2026-10-01T08:00:00Z,2026-10-01T10:00:00Z,120.0,5,False,Admission -> Triage -> Diagnosis -> Treatment -> Discharge
+case-002,2026-10-02T08:00:00Z,2026-10-02T10:00:00Z,120.0,4,False,Admission -> Triage -> Treatment -> Discharge
+case-003,2026-10-03T08:00:00Z,2026-10-03T10:00:00Z,120.0,6,True,Admission -> Triage -> Triage -> Diagnosis -> Treatment -> Discharge
+case-004,2026-10-04T08:00:00Z,2026-10-04T10:00:00Z,120.0,5,False,Admission -> Diagnosis -> Triage -> Treatment -> Discharge

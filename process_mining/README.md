@@ -105,3 +105,34 @@ primary Week 3 outputs come from the two commands in that workflow above.
 
 This workflow covers Week 3 only; it does not run or modify conformance
 checking.
+
+## Power BI dashboard tables and BigQuery
+
+`build_dashboard_tables.py` builds six dashboard tables from the same
+`case_id`, `activity`, and `timestamp` event-log columns used by the discovery
+and bottleneck scripts. From the repository root in Windows PowerShell, run:
+
+```powershell
+python .\process_mining\build_dashboard_tables.py
+```
+
+The default sample log is `process_mining\sample_event_log.csv`; the six
+snake_case CSV files are written to `process_mining\output\powerbi\`. To use
+another event log, pass `--input .\path\to\event_log.csv`.
+
+The new `load_outputs_to_bigquery.py` loads every CSV in that folder to a
+`pm_`-prefixed BigQuery table, replacing existing table contents. Set
+`GOOGLE_CLOUD_PROJECT` and `BIGQUERY_DATASET`, then preview or run the load:
+
+```powershell
+$env:GOOGLE_CLOUD_PROJECT = 'your-project-id'
+$env:BIGQUERY_DATASET = 'your_dataset'
+python .\process_mining\load_outputs_to_bigquery.py --dry-run
+python .\process_mining\load_outputs_to_bigquery.py
+```
+
+The real load uses Google Cloud Application Default Credentials. The dry run
+does not require authentication. See
+[`POWERBI_GUIDE.md`](POWERBI_GUIDE.md) for table definitions and suggested
+Power BI visuals. The dashboard tables are a Week 3 deliverable and do not
+perform conformance checking.

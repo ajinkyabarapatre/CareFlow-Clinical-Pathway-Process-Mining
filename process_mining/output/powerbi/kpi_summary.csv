@@ -1,0 +1,2 @@
+total_cases,total_events,avg_case_duration_minutes,median_case_duration_minutes,pct_cases_with_loopback,top_bottleneck_transition,top_bottleneck_avg_wait_minutes
+4,20,120.0,120.0,25.0,Treatment -> Discharge,45.0

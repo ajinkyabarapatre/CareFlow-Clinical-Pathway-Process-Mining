@@ -1,0 +1,6 @@
+activity,event_count,case_count,avg_time_in_step_minutes
+Admission,4,4,22.5
+Diagnosis,3,3,25.0
+Discharge,4,4,
+Treatment,4,4,45.0
+Triage,5,4,27.0
