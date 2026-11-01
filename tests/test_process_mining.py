@@ -11,6 +11,11 @@ from process_mining.bottleneck_analysis import (
     calculate_metrics,
     load_event_log as load_bottleneck_event_log,
 )
+from process_mining.export_for_powerbi import (
+    LOOPBACK_COLUMNS,
+    TRANSITION_COLUMNS,
+    export_bottleneck_csvs,
+)
 from process_mining.conformance_check import (
     IDEAL_PATH,
     OUTPUT_COLUMNS as CONFORMANCE_COLUMNS,
@@ -118,7 +123,56 @@ def test_bottleneck_metrics_calculate_waits_and_have_stable_csv_schema(
     assert transition["max_waiting_time_hours"] == pytest.approx(3.0)
     assert transition["p90_waiting_time_hours"] == pytest.approx(2.8)
     assert list(exported.columns) == list(BOTTLENECK_COLUMNS)
-    assert metrics["is_bottleneck"].sum() == min(3, len(metrics))
+    expected_transition_count = len(dataframe) - dataframe["case_id"].nunique()
+    assert metrics["transition_count"].sum() == expected_transition_count
+    wait_columns = [
+        "avg_wait_minutes",
+        "median_wait_minutes",
+        "p90_wait_minutes",
+        "max_wait_minutes",
+    ]
+    assert (metrics[wait_columns] >= 0).all().all()
+    assert metrics["is_bottleneck"].sum() == min(10, len(metrics))
+
+
+def test_powerbi_exports_have_clean_columns_and_report_loopbacks(
+    tmp_path: Path,
+) -> None:
+    dataframe = event_dataframe(
+        {
+            "case-1": [("A", 0), ("B", 10), ("A", 20)],
+            "case-2": [("A", 0), ("A", 5)],
+        }
+    )
+    dataframe["_source_order"] = range(len(dataframe))
+    metrics = calculate_metrics(dataframe)
+    expected_transition_count = len(dataframe) - dataframe["case_id"].nunique()
+
+    assert metrics["transition_count"].sum() == expected_transition_count
+    assert (metrics["avg_wait_minutes"] >= 0).all()
+
+    metrics_path = tmp_path / "bottlenecks.csv"
+    metrics.to_csv(metrics_path, index=False)
+    transitions_path, loopbacks_path = export_bottleneck_csvs(
+        metrics_path, tmp_path / "output"
+    )
+    transitions = pd.read_csv(transitions_path)
+    loopbacks = pd.read_csv(loopbacks_path)
+
+    assert tuple(transitions.columns) == TRANSITION_COLUMNS
+    assert tuple(loopbacks.columns) == LOOPBACK_COLUMNS
+    assert not any(column.startswith("Unnamed:") for column in transitions.columns)
+    assert not any(column.startswith("Unnamed:") for column in loopbacks.columns)
+    assert set(zip(loopbacks["from_activity"], loopbacks["to_activity"])) == {
+        ("A", "A"),
+        ("B", "A"),
+    }
+    repeated_activity = loopbacks.loc[
+        (loopbacks["from_activity"] == "A") & (loopbacks["to_activity"] == "A")
+    ].iloc[0]
+    assert repeated_activity["loopback_count"] == 1
+    assert repeated_activity["cases_affected"] == 1
+    assert repeated_activity["percent_cases_affected"] == pytest.approx(50.0)
 
 
 @pytest.mark.parametrize(

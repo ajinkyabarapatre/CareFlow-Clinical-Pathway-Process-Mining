@@ -35,24 +35,8 @@ OUTPUT_COLUMNS = (
     "pct_of_cases_affected",
     "is_loop_back",
 )
-POWER_BI_COLUMNS = (
-    "from_activity",
-    "to_activity",
-    "transition_count",
-    "avg_wait_minutes",
-    "median_wait_minutes",
-    "p90_wait_minutes",
-    "max_wait_minutes",
-    "pct_of_all_transitions",
-    "loop_back_count",
-    "loop_back_case_count",
-    "total_case_count",
-    "pct_of_cases_affected",
-    "is_loop_back",
-    "bottleneck_rank",
-)
 TOP_TRANSITIONS = 10
-BOTTLENECK_COUNT = 3
+BOTTLENECK_COUNT = TOP_TRANSITIONS
 
 
 def load_event_log(
@@ -119,7 +103,7 @@ def load_event_log(
     dataframe["timestamp"] = parsed_timestamps
     dataframe["_source_order"] = range(len(dataframe))
     dataframe = dataframe.sort_values(
-        ["case_id", "timestamp", "_source_order"],
+        ["case_id", "timestamp", "activity", "_source_order"],
         kind="stable",
     )
     _validate_nonnegative_transition_durations(dataframe)
@@ -165,7 +149,7 @@ def load_event_log_from_bigquery(table_name: str) -> pd.DataFrame:
 def calculate_metrics(dataframe: pd.DataFrame) -> pd.DataFrame:
     """Calculate ranked metrics for each nonnegative activity transition."""
     ordered = dataframe.sort_values(
-        ["case_id", "timestamp", "_source_order"],
+        ["case_id", "timestamp", "activity", "_source_order"],
         kind="stable",
     ).copy()
     case_events = ordered.groupby("case_id", sort=False)
@@ -187,13 +171,12 @@ def calculate_metrics(dataframe: pd.DataFrame) -> pd.DataFrame:
     for case_id, case_events in ordered.groupby("case_id", sort=False):
         activities = case_events["activity"].tolist()
         previously_seen: set[str] = set()
-        for index, current_activity in enumerate(activities[:-1]):
-            next_activity = activities[index + 1]
+        for current_activity, next_activity in zip(activities, activities[1:]):
+            previously_seen.add(current_activity)
             if next_activity in previously_seen:
                 pair = (current_activity, next_activity)
                 loop_back_pairs.append(pair)
                 loop_back_cases.setdefault(pair, set()).add(str(case_id))
-            previously_seen.add(current_activity)
 
     metrics = (
         transitions.groupby(["activity", "next_activity"])["waiting_time_hours"]
@@ -260,7 +243,7 @@ def calculate_metrics(dataframe: pd.DataFrame) -> pd.DataFrame:
 def _validate_nonnegative_transition_durations(dataframe: pd.DataFrame) -> None:
     """Reject event logs whose consecutive events have negative waits."""
     ordered = dataframe.sort_values(
-        ["case_id", "timestamp", "_source_order"],
+        ["case_id", "timestamp", "activity", "_source_order"],
         kind="stable",
     )
     gaps = ordered.groupby("case_id", sort=False)["timestamp"].diff().dropna()
@@ -284,7 +267,7 @@ def validate_transition_sanity(
             f"but calculated {actual_count}"
         )
     ordered = dataframe.sort_values(
-        ["case_id", "timestamp", "_source_order"],
+        ["case_id", "timestamp", "activity", "_source_order"],
         kind="stable",
     )
     durations = ordered.groupby("case_id", sort=False)["timestamp"].diff().dropna()
@@ -464,23 +447,17 @@ def main() -> None:
     validate_transition_sanity(dataframe, metrics)
     cross_check_pm4py(metrics, event_log)
 
-    csv_path = output_directory / "bottleneck_transitions.csv"
-    legacy_csv_path = output_directory / "bottlenecks.csv"
+    csv_path = output_directory / "bottlenecks.csv"
     dfg_path = output_directory / "performance_dfg.png"
     chart_path = output_directory / "top_10_slowest_transitions.png"
     output_directory.mkdir(parents=True, exist_ok=True)
-    power_bi_metrics = metrics.loc[:, list(POWER_BI_COLUMNS)]
-    power_bi_metrics.to_csv(csv_path, index=False)
-    metrics.to_csv(legacy_csv_path, index=False)
+    metrics.to_csv(csv_path, index=False)
     write_performance_dfg(event_log, dfg_path)
     write_top_transitions_chart(metrics, chart_path)
 
     LOGGER.info("Analyzed %s events across %s cases.", len(dataframe), len(event_log))
     LOGGER.info("Cross-checked pandas transition means against PM4Py.")
-    LOGGER.info(
-        "Wrote %s transition rows to %s", len(power_bi_metrics), csv_path
-    )
-    LOGGER.info("Wrote the legacy ranked transition CSV to %s", legacy_csv_path)
+    LOGGER.info("Wrote %s ranked transition rows to %s", len(metrics), csv_path)
     LOGGER.info("Wrote the performance DFG to %s", dfg_path)
     LOGGER.info("Wrote the top-transition chart to %s", chart_path)
     LOGGER.info(

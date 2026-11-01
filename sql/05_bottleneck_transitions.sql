@@ -39,11 +39,11 @@ WITH ordered_events AS (
     Timestamp AS event_timestamp,
     LEAD(Activity_Name) OVER (
       PARTITION BY Case_ID
-      ORDER BY Timestamp
+      ORDER BY Timestamp, Activity_Name
     ) AS next_activity_name,
     LEAD(Timestamp) OVER (
       PARTITION BY Case_ID
-      ORDER BY Timestamp
+      ORDER BY Timestamp, Activity_Name
     ) AS next_timestamp
   FROM `project.dataset.event_log`
 ),
@@ -130,15 +130,15 @@ WITH ordered_events AS (
     Timestamp AS event_timestamp,
     ROW_NUMBER() OVER (
       PARTITION BY Case_ID
-      ORDER BY Timestamp
+      ORDER BY Timestamp, Activity_Name
     ) AS event_number,
     LEAD(Activity_Name) OVER (
       PARTITION BY Case_ID
-      ORDER BY Timestamp
+      ORDER BY Timestamp, Activity_Name
     ) AS next_activity_name,
     LEAD(Timestamp) OVER (
       PARTITION BY Case_ID
-      ORDER BY Timestamp
+      ORDER BY Timestamp, Activity_Name
     ) AS next_timestamp
   FROM `project.dataset.event_log`
 ),
@@ -163,7 +163,7 @@ loop_back_transitions AS (
   FROM transitions AS transition
   JOIN ordered_events AS previous_event
     ON previous_event.case_id = transition.case_id
-    AND previous_event.event_number < transition.event_number
+    AND previous_event.event_number <= transition.event_number
     AND previous_event.activity_name = transition.to_activity
 ),
 loop_back_counts AS (

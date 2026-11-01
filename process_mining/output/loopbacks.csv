@@ -1,0 +1,2 @@
+from_activity,to_activity,loopback_count,cases_affected,percent_cases_affected
+Triage,Triage,1,1,25.0
