@@ -80,7 +80,11 @@ We built the dashboard in Power BI Desktop. Because the event log was not ready,
 The KPIs and how they are calculated are written in dashboard/kpi_definitions.md. From patients.csv we can build: average OPD waiting time, average room allocation time, patients per day, average rating and average treatment cost. These need the event log: loop-back percentage, average time between steps, longest transition and non-compliant cases.
 
 ### 6.3 Planned pages
-- Page 2: waiting time analysis by doctor, severity level and patient category
+- Page 2: Waiting time analysis
+This page compares average waiting time by doctor, by patient category, and room allocation time by severity level.
+
+![Dashboard page 2](../dashboard/screenshots/page2_draft.png)
+
 - Page 3: process map of patient flow with the loop-back highlighted
 - Page 4: findings and the recommended action
 The full plan is in dashboard/dashboard_layout.md.
