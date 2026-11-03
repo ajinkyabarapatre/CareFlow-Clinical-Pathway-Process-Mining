@@ -1,3 +1,73 @@
+# Week 4: Conformance checking
+
+`conformance_check.py` compares each patient's timestamp-ordered journey with
+the configured ideal pathway. Edit `IDEAL_PATH` near the top of that file to
+change the required sequence. `OPTIONAL_STEPS` contains activities that may
+appear without making a case non-compliant; other unlisted activities are
+reported as extra steps.
+
+The configurable default required path matches the checked-in sample:
+
+```text
+Admission -> Triage -> Diagnosis -> Treatment -> Discharge
+```
+
+The default optional steps are `X-Ray` and `Lab`. A case is classified as
+`compliant`, `skipped_step`, `wrong_order`, `repeated_step` (including a
+loop-back to an earlier activity), or `extra_step`. For each case, the results
+include its actual path, compliance flag, missing required steps, and
+unapproved extra steps. Summary percentages are zero when the input contains
+no cases.
+
+From the repository root in Windows PowerShell, run conformance checking and
+then refresh the Power BI exports:
+
+```powershell
+python .\process_mining\conformance_check.py
+python .\process_mining\export_for_powerbi.py
+```
+
+To check a different event log:
+
+```powershell
+python .\process_mining\conformance_check.py `
+  --input .\path\to\event_log.csv
+python .\process_mining\export_for_powerbi.py `
+  --conformance-input .\process_mining\output\conformance_results.csv
+```
+
+The event log must have `case_id`, `activity`, and `timestamp` columns. The
+checker sorts each case by timestamp and preserves input order for timestamp
+ties.
+
+## Conformance outputs
+
+The checker writes its results to `process_mining/output/`:
+
+| File | Contents |
+| --- | --- |
+| `conformance_results.csv` | One row per case, with `Case_ID`, actual path, compliance, deviation type, missing steps, and extra steps. |
+| `conformance_summary.csv` | Case totals, compliant/non-compliant percentages, counts for every deviation type, and average token-replay fitness when supported by PM4Py. |
+
+The Power BI exporter adds:
+
+| File | Contents |
+| --- | --- |
+| `non_compliant_cases.csv` | Only non-compliant cases, with snake_case columns. |
+| `conformance_summary.csv` | The summary table, including optional average fitness from the checker. |
+
+All CSV files are written without an index column. The optional token-replay
+fitness is evaluated against the ideal Petri net; if the installed PM4Py
+token-replay API is incompatible, fitness is reported as unavailable and
+conformance classification still completes.
+
+## Findings from the checked-in sample
+
+The sample has 4 cases. Against the default ideal, one case is compliant, one
+skips Diagnosis, one repeats Triage, and one places Diagnosis before Triage.
+That is 25% compliant and 75% non-compliant; see `conformance_summary.csv`
+for the per-deviation counts after running the workflow.
+
 # Week 3: Bottleneck calculations and Power BI export
 
 `bottleneck_analysis.py` is the primary Week 3 calculator. It sorts events
@@ -103,8 +173,9 @@ python .\process_mining\major_paths.py
 These are not required for the Week 3 bottleneck or Power BI workflow. The
 primary Week 3 outputs come from the two commands in that workflow above.
 
-This workflow covers Week 3 only; it does not run or modify conformance
-checking.
+The bottleneck calculation remains a separate Week 3 step. Run the Week 4
+conformance checker first if you also want the exporter to create its
+conformance tables.
 
 ## Power BI dashboard tables and BigQuery
 
