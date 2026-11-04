@@ -220,6 +220,30 @@ The bottleneck calculation remains a separate Week 3 step. Run the Week 4
 conformance checker first if you also want the exporter to create its
 conformance tables.
 
+## Dashboard Charts
+
+From the repository root in Windows PowerShell, generate the KPI summary,
+variant table, and four PNG charts from the sample event log:
+
+```powershell
+python .\process_mining\generate_charts.py
+```
+
+The script reads `process_mining\sample_event_log.csv`, which uses the columns
+`case_id`, `activity`, and `timestamp`. It saves results under
+`process_mining\output\charts\`:
+
+| File | Contents |
+| --- | --- |
+| `kpi_summary.csv` | One-row case, event, activity, stay-time, loop-back, and top-bottleneck KPIs. |
+| `variant_table.csv` | Observed paths ranked by case count, with percentages and variant IDs (`V1` is most common). |
+| `top_bottlenecks.png` | The highest average waiting-time transitions. |
+| `path_variants.png` | The most common pathway variants by case count. |
+| `stay_time_per_case.png` | Total elapsed time from each patient's first to last event. |
+| `activity_counts.png` | Number of logged events for each activity. |
+
+CSV files are written without an index and use snake_case column names.
+
 ## Power BI dashboard tables and BigQuery
 
 `build_dashboard_tables.py` builds six dashboard tables from the same

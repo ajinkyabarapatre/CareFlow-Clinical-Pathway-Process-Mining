@@ -1,0 +1,2 @@
+total_cases,total_events,total_activities,avg_stay_minutes,max_stay_minutes,pct_cases_with_loopback,top_bottleneck,top_bottleneck_avg_wait
+4,20,5,120.0,120.0,25.0,Admission -> Diagnosis,45.0

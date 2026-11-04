@@ -1,0 +1,5 @@
+path_variant,case_count,pct_of_cases,variant_id
+Admission -> Triage -> Diagnosis -> Treatment -> Discharge,1,25.0,V1
+Admission -> Triage -> Treatment -> Discharge,1,25.0,V2
+Admission -> Triage -> Triage -> Diagnosis -> Treatment -> Discharge,1,25.0,V3
+Admission -> Diagnosis -> Triage -> Treatment -> Discharge,1,25.0,V4
