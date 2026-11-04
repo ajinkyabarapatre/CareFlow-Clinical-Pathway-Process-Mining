@@ -4,3 +4,5 @@ pandas
 google-cloud-bigquery
 networkx
 pytest
+streamlit
+plotly
