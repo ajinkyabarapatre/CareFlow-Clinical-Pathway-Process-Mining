@@ -61,6 +61,49 @@ fitness is evaluated against the ideal Petri net; if the installed PM4Py
 token-replay API is incompatible, fitness is reported as unavailable and
 conformance classification still completes.
 
+## Conformance Report
+
+`conformance_report.py` creates a straightforward per-patient comparison
+between the observed event sequence and the required pathway. The default
+`IDEAL_PATH` is built from the sample CSV's real activity names:
+
+```text
+Admission -> Triage -> Diagnosis -> Treatment -> Discharge
+```
+
+To change the required sequence, edit `IDEAL_PATH` near the top of
+`conformance_report.py`. Activities listed in `OPTIONAL_STEPS` (default:
+`X-Ray` and `Lab`) may occur without being treated as extra steps. The input
+CSV uses `case_id`, `activity`, and `timestamp` columns; the script sorts
+events by patient and time before comparing paths.
+
+Run from the repository root in Windows PowerShell:
+
+```powershell
+python .\process_mining\conformance_report.py
+```
+
+The script writes two index-free CSV files to `process_mining/output/`:
+
+| File | Contents |
+| --- | --- |
+| `conformance_report_cases.csv` | One row per patient, including the actual path, compliance flag, primary deviation, missing steps, and extra steps. |
+| `conformance_report_summary.csv` | Total, compliant, and non-compliant cases; percentages; and counts by deviation type. |
+
+The deviation labels mean:
+
+- `skipped_step`: one or more required activities are missing.
+- `extra_step`: an activity appears that is neither in the ideal path nor optional.
+- `loop_back`: any activity is repeated in a patient's path.
+- `wrong_order`: required activities appear in an order different from the ideal.
+- `compliant`: the required path is followed, with optional activities allowed.
+
+When a case has multiple deviations, the report assigns one primary label in
+this order: `loop_back`, `wrong_order`, `skipped_step`, then `extra_step`.
+Missing and extra activities are still listed separately in the case report.
+An empty event log with the required headers produces zero cases and zero
+percentages.
+
 ## Findings from the checked-in sample
 
 The sample has 4 cases. Against the default ideal, one case is compliant, one

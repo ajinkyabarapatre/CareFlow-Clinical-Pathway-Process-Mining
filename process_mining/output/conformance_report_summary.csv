@@ -1,0 +1,2 @@
+total_cases,compliant_cases,non_compliant_cases,pct_compliant,pct_non_compliant,compliant_count,skipped_step_count,extra_step_count,loop_back_count,wrong_order_count
+4,1,3,25.0,75.0,1,1,0,1,1

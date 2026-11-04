@@ -1,0 +1,5 @@
+case_id,actual_path,is_compliant,deviation_type,missing_steps,extra_steps
+case-001,Admission -> Triage -> Diagnosis -> Treatment -> Discharge,True,compliant,,
+case-002,Admission -> Triage -> Treatment -> Discharge,False,skipped_step,Diagnosis,
+case-003,Admission -> Triage -> Triage -> Diagnosis -> Treatment -> Discharge,False,loop_back,,
+case-004,Admission -> Diagnosis -> Triage -> Treatment -> Discharge,False,wrong_order,,
