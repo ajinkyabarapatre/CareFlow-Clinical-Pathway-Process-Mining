@@ -21,6 +21,36 @@ This repository contains scripts and query text, not a configured BigQuery
 project, a Power BI report, or credentials for either service. Set the
 BigQuery table path in a query before running it against a real table.
 
+## Run Everything
+
+From the repository root, run the complete pipeline with:
+
+```powershell
+python process_mining\run_pipeline.py
+```
+
+The runner executes the existing scripts in order and writes
+`process_mining/output/pipeline_run.log` and
+`process_mining/output/pipeline_summary.csv`. Use `--input .\path\to\event_log.csv`
+to select a different event log, `--skip discovery charts` to skip named steps,
+or `--stop-on-error` to skip later steps after a failure.
+
+| Step | Script | Main outputs |
+| --- | --- | --- |
+| Discovery | `process_mining/process_discovery.py` | `discovery_summary.csv`, `dfg.png`, `petri_net.png` |
+| Major paths | `process_mining/major_paths.py` | `top_variants.csv`, `major_paths.png` |
+| Bottlenecks | `process_mining/bottleneck_analysis.py` | `bottlenecks.csv`, `performance_dfg.png`, `top_10_slowest_transitions.png` |
+| Conformance | `process_mining/conformance_check.py` | `conformance_results.csv`, `conformance_summary.csv` |
+| Charts | `process_mining/generate_charts.py` | `charts/kpi_summary.csv`, `charts/variant_table.csv`, and four PNG charts |
+| Power BI export | `process_mining/export_for_powerbi.py` | `bottleneck_transitions.csv`, `loopbacks.csv`, `non_compliant_cases.csv`, `conformance_summary.csv` |
+
+All analysis scripts write under `process_mining/output/`. The chart script
+currently reads the bundled sample directly and does not accept `--input`;
+when a different input is selected, the runner logs that the chart outputs
+still reflect the sample. Missing scripts are logged and skipped. A step
+passes only when it exits successfully and all of its expected outputs exist
+and are non-empty.
+
 ## Member 3 scope
 
 | Week | Task | Script | Output |
