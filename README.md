@@ -53,18 +53,50 @@ and are non-empty.
 
 ## Member 3 scope
 
-| Week | Task | Script | Output |
-| --- | --- | --- | --- |
-| Week 2 | Discover the observed directly-follows graph and an Inductive Miner Petri net. | `process_mining/process_discovery.py` | `process_mining/output/dfg.png`; `process_mining/output/petri_net.png` |
-| Mid-review | Rank frequent patient activity variants and visualize their combined directly-follows graph. | `process_mining/major_paths.py` | `process_mining/output/top_variants.csv`; `process_mining/output/major_paths.png` |
-| Week 3 | Calculate directly-follows waiting-time metrics and flag the three highest-mean transitions. | `process_mining/bottleneck_analysis.py` | `process_mining/output/bottlenecks.csv`; `process_mining/output/performance_dfg.png`; `process_mining/output/top_10_slowest_transitions.png` |
-| Supporting analysis | Calculate ranked bottleneck metrics with optional `department` and `patient_group` breakdowns; provide a synthetic verification mode. | `process_mining/bottlenecks.py` | `process_mining/output/ranked_bottlenecks.csv`; `process_mining/output/ranked_bottlenecks.png` |
-| Week 4 | Replay each case against the fixed ideal pathway; flag compliance and export per-case deviations and token-replay fitness. | `process_mining/conformance_check.py`; `sql/06_conformance_summary.sql` | `process_mining/output/conformance_results.csv`; BigQuery summary rows |
-| BigQuery support | Calculate transition metrics and summarize compliant cases with ranked deviation types. | `sql/04_bottleneck_metrics.sql`; `sql/05_bottlenecks.sql`; `sql/06_conformance_summary.sql` | BigQuery query result sets; no local output file is written by the SQL files. |
+Run these commands from the repository root in Windows PowerShell. The sample
+event log is used unless a script documents an `--input` option.
 
-The supporting-analysis row documents the alternate bottleneck analyzer.
-The BigQuery-support row lists the SQL versions that complement the dated
-Python assignment work.
+| Script | What it does | Windows command | Output files |
+| --- | --- | --- | --- |
+| `run_pipeline.py` | Runs the local analysis steps in order. | `python .\process_mining\run_pipeline.py` | `process_mining\output\pipeline_run.log`, `process_mining\output\pipeline_summary.csv`, and each step's outputs below. |
+| `process_discovery.py` | Discovers the directly-follows graph and Petri net; summarizes the event log. | `python .\process_mining\process_discovery.py` | `discovery_summary.csv`, `dfg.png`, `petri_net.png`. |
+| `major_paths.py` | Ranks observed activity paths and graphs the selected paths. | `python .\process_mining\major_paths.py` | `top_variants.csv`, `major_paths.png`. |
+| `bottleneck_analysis.py` | Measures waits between consecutive activities. | `python .\process_mining\bottleneck_analysis.py` | `bottlenecks.csv`, `performance_dfg.png`, `top_10_slowest_transitions.png`. |
+| `bottlenecks.py` | Alternate ranked bottleneck analysis; requires an input or `--verify`. | `python .\process_mining\bottlenecks.py --input .\process_mining\sample_event_log.csv` | `ranked_bottlenecks.csv`, `ranked_bottlenecks.png`. |
+| `conformance_check.py` | Compares each case with the ideal pathway and reports deviations and replay fitness. | `python .\process_mining\conformance_check.py` | `conformance_results.csv`, `conformance_summary.csv`. |
+| `conformance_report.py` | Produces a separate per-case pathway comparison and summary. | `python .\process_mining\conformance_report.py` | `conformance_report_cases.csv`, `conformance_report_summary.csv`. |
+| `generate_charts.py` | Creates sample-log KPI and variant tables plus charts. | `python .\process_mining\generate_charts.py` | `charts\kpi_summary.csv`, `charts\variant_table.csv`, and PNG charts in `charts\`. |
+| `build_dashboard_tables.py` | Builds the Power BI case, arrival, KPI, process-map, and variant tables. | `python .\process_mining\build_dashboard_tables.py` | Six CSV files in `output\powerbi\`. |
+| `export_for_powerbi.py` | Exports bottleneck and conformance tables for Power BI. | `python .\process_mining\export_for_powerbi.py` | `bottleneck_transitions.csv`, `loopbacks.csv`, and conformance exports when conformance input is available. |
+| `load_outputs_to_bigquery.py` | Loads Power BI CSV tables into BigQuery. | Set `$env:GOOGLE_CLOUD_PROJECT` and `$env:BIGQUERY_DATASET`, then run `python .\process_mining\load_outputs_to_bigquery.py --dry-run` or omit `--dry-run` to load. | BigQuery tables; no local CSV output. |
+| `dashboard_app.py` | Starts the interactive Streamlit dashboard. | `python -m streamlit run .\process_mining\dashboard_app.py` | Interactive dashboard; reads the sample log by default. |
+| `transition_report.py` | Writes transition, loop-back, and case-duration summaries. | `python .\process_mining\transition_report.py` | `transition_summary.csv`, `loopback_summary.csv`, `case_durations.csv`. |
+
+The SQL scripts `sql\04_bottleneck_metrics.sql`, `sql\05_bottlenecks.sql`,
+and `sql\06_conformance_summary.sql` are run in BigQuery after setting the
+event-log table path in the query; they do not write local output files.
+
+Run the automated tests from the repository root after installing
+`requirements.txt` in the active Python environment:
+
+```powershell
+python -m pytest
+```
+
+### Project status
+
+The checked-in output summary (`process_mining\output\discovery_summary.csv`)
+reports **4 cases, 20 events, 5 activities, 4 variants**, and an average case
+duration of **2.0 hours** for the bundled sample. These are sample results,
+not production clinical measurements.
+
+| Status | Work |
+| --- | --- |
+| Done | Sample event-log discovery, variant analysis, bottleneck analysis, conformance checks, and CSV/chart exports. |
+| In progress | Connecting the outputs to a project-specific Power BI report or BigQuery dataset; this repository does not include that service configuration. |
+
+See [`process_mining/DATA_DICTIONARY.md`](process_mining/DATA_DICTIONARY.md)
+for the actual output CSV columns and suggested Power BI visuals.
 
 ## Folder tree
 
