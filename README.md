@@ -23,7 +23,18 @@ BigQuery table path in a query before running it against a real table.
 
 ## Run Everything
 
-From the repository root, run the complete pipeline with:
+From a fresh clone, open Windows PowerShell at the repository root and create
+an environment, install the declared dependencies, and run the tests:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pytest
+```
+
+Then run the complete pipeline:
 
 ```powershell
 python process_mining\run_pipeline.py
