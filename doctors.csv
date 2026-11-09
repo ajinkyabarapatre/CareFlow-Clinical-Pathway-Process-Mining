@@ -1,0 +1,81 @@
+doctor_id,doctor_name,specialization,department,doctor_type,experience_years,consultation_fee,doctor_shift,max_patients_per_day
+DOC510,Dr. Nikhil Siddiqui,Pulmonologist,Pulmonology,IPD Only,19,1000,Morning,0
+DOC511,Dr. Venkatesh Kulkarni,ENT Specialist,ENT,OPD Only,5,800,Morning,50
+DOC512,Dr. Mohammed Arora,Neurologist,Neurology,Both,6,1500,Morning,45
+DOC513,Dr. Shweta Mittal,Pulmonologist,Pulmonology,IPD Only,33,1000,Morning,0
+DOC514,Dr. Parminder Reddy,Orthopedic Surgeon,Orthopedics,Both,17,1000,Evening,42
+DOC515,Dr. Reena Qureshi,Gastroenterologist,Gastroenterology,IPD Only,25,1100,Evening,0
+DOC516,Dr. Manoj Mishra,General Physician,General Medicine,IPD Only,33,500,Morning,0
+DOC517,Dr. Sanjay Nair,Dermatologist,Dermatology,OPD Only,12,800,Morning,40
+DOC518,Dr. Karthik Agrawal,Gastroenterologist,Gastroenterology,Both,31,1100,Evening,46
+DOC519,Dr. Kapil Parekh,Gynecologist,Gynecology,IPD Only,9,900,Evening,0
+DOC520,Dr. Meena Bhatia,Cardiologist,Cardiology,IPD Only,29,1200,Evening,0
+DOC521,Dr. Nikhil Kumar,Emergency Physician,Emergency,IPD Only,18,600,24x7,0
+DOC522,Dr. Sumit Garg,Urologist,Urology,Both,34,1000,Morning,50
+DOC523,Dr. Ravi Bhatt,Gynecologist,Gynecology,IPD Only,12,900,Morning,0
+DOC524,Dr. Sunita Rao,Gynecologist,Gynecology,Both,25,900,Morning,47
+DOC525,Dr. Anita Malhotra,ENT Specialist,ENT,OPD Only,7,800,Morning,43
+DOC526,Dr. Renu Dubey,Neurologist,Neurology,Both,10,1500,Morning,41
+DOC527,Dr. Divya Chopra,Gastroenterologist,Gastroenterology,Both,35,1100,Morning,48
+DOC528,Dr. Shweta Dubey,Intensivist,ICU,IPD Only,14,1800,24x7,0
+DOC529,Dr. Mamta Mittal,General Physician,General Medicine,OPD Only,25,500,Morning,46
+DOC530,Dr. Sarla Rajput,Emergency Physician,Emergency,IPD Only,9,600,24x7,0
+DOC531,Dr. Anil Ali,Nephrologist,Nephrology,IPD Only,3,1200,Morning,0
+DOC532,Dr. Anil Desai,Cardiologist,Cardiology,Both,5,1200,Morning,40
+DOC533,Dr. Suresh Ali,Ophthalmologist,Ophthalmology,OPD Only,6,900,Morning,41
+DOC534,Dr. Radha Joshi,Cardiologist,Cardiology,Both,10,1200,Morning,50
+DOC535,Dr. Irfan Menon,Cardiologist,Cardiology,Both,8,1200,Evening,47
+DOC536,Dr. Salim Sheikh,Dermatologist,Dermatology,OPD Only,29,800,Morning,50
+DOC537,Dr. Swati Verma,Pulmonologist,Pulmonology,IPD Only,8,1000,Evening,0
+DOC538,Dr. Balkishan Ali,Pediatrician,Pediatrics,OPD Only,8,700,Morning,46
+DOC539,Dr. Ramesh Dubey,ENT Specialist,ENT,OPD Only,30,800,Morning,43
+DOC540,Dr. Deepa Thakur,Orthopedic Surgeon,Orthopedics,Both,17,1000,Morning,42
+DOC541,Dr. Rakesh Shah,General Physician,General Medicine,OPD Only,5,500,Morning,47
+DOC542,Dr. Surendra Malhotra,Ophthalmologist,Ophthalmology,OPD Only,12,900,Morning,41
+DOC543,Dr. Usha Joshi,General Physician,General Medicine,OPD Only,27,500,Morning,47
+DOC544,Dr. Karthik Kumar,Cardiologist,Cardiology,IPD Only,26,1200,Morning,0
+DOC545,Dr. Vandana Chauhan,Pediatrician,Pediatrics,OPD Only,33,700,Morning,47
+DOC546,Dr. Mohit Joshi,Neurologist,Neurology,IPD Only,5,1500,Morning,0
+DOC547,Dr. Anita Tripathi,Gynecologist,Gynecology,Both,32,900,Morning,40
+DOC548,Dr. Rahul Iyer,Neurologist,Neurology,Both,6,1500,Morning,48
+DOC549,Dr. Gurpreet Qureshi,General Physician,General Medicine,OPD Only,9,500,Morning,50
+DOC550,Dr. Sandeep Singh,General Physician,General Medicine,OPD Only,7,500,Morning,49
+DOC551,Dr. Shweta Goyal,Urologist,Urology,Both,22,1000,Evening,44
+DOC552,Dr. Naveen Qureshi,Emergency Physician,Emergency,IPD Only,10,600,24x7,0
+DOC553,Dr. Sowmya Khan,General Physician,General Medicine,IPD Only,6,500,Morning,0
+DOC554,Dr. Poonam Dwivedi,Nephrologist,Nephrology,IPD Only,8,1200,Morning,0
+DOC555,Dr. Tushar Chopra,Neurologist,Neurology,IPD Only,10,1500,Morning,0
+DOC556,Dr. Gurpreet Ansari,Ophthalmologist,Ophthalmology,OPD Only,20,900,Morning,41
+DOC557,Dr. Pushpa Desai,Urologist,Urology,IPD Only,21,1000,Morning,0
+DOC558,Dr. Arun Shukla,General Physician,General Medicine,IPD Only,21,500,Morning,0
+DOC559,Dr. Naveen Rao,Pulmonologist,Pulmonology,IPD Only,8,1000,Morning,0
+DOC560,Dr. Mohit Agrawal,General Physician,General Medicine,OPD Only,15,500,Morning,44
+DOC561,Dr. Kapil Garg,Nephrologist,Nephrology,IPD Only,18,1200,Evening,0
+DOC562,Dr. Parminder Verma,Emergency Physician,Emergency,IPD Only,7,600,24x7,0
+DOC563,Dr. Rekha Kumar,Pediatrician,Pediatrics,OPD Only,23,700,Morning,44
+DOC564,Dr. Yogesh Chopra,Emergency Physician,Emergency,IPD Only,12,600,24x7,0
+DOC565,Dr. Lata Desai,Intensivist,ICU,IPD Only,29,1800,24x7,0
+DOC566,Dr. Anil Mehta,Orthopedic Surgeon,Orthopedics,IPD Only,11,1000,Morning,0
+DOC567,Dr. Pankaj Shukla,Pediatrician,Pediatrics,OPD Only,11,700,Morning,45
+DOC568,Dr. Rekha Kapoor,Dermatologist,Dermatology,OPD Only,25,800,Morning,42
+DOC569,Dr. Nisha Malhotra,Gynecologist,Gynecology,Both,8,900,Morning,43
+DOC570,Dr. Ramya Bansal,Dermatologist,Dermatology,OPD Only,11,800,Morning,48
+DOC571,Dr. Vijay Yadav,General Physician,General Medicine,Both,3,500,Morning,42
+DOC572,Dr. Devendra Ali,Intensivist,ICU,IPD Only,28,1800,24x7,0
+DOC573,Dr. Ajay Mehta,Ophthalmologist,Ophthalmology,OPD Only,8,900,Morning,44
+DOC574,Dr. Usha Khanna,ENT Specialist,ENT,OPD Only,14,800,Morning,40
+DOC575,Dr. Harpreet Khanna,Orthopedic Surgeon,Orthopedics,Both,3,1000,Evening,44
+DOC576,Dr. Fatima Arora,Orthopedic Surgeon,Orthopedics,IPD Only,6,1000,Morning,0
+DOC577,Dr. Zarina Mittal,Emergency Physician,Emergency,IPD Only,34,600,24x7,0
+DOC578,Dr. Nisha Dubey,Intensivist,ICU,IPD Only,23,1800,24x7,0
+DOC579,Dr. Naveen Iyer,General Physician,General Medicine,OPD Only,18,500,Morning,41
+DOC580,Dr. Sandeep Chauhan,Gastroenterologist,Gastroenterology,IPD Only,24,1100,Morning,0
+DOC581,Dr. Pavithra Agrawal,General Physician,General Medicine,IPD Only,34,500,Morning,0
+DOC582,Dr. Karthik Dwivedi,Emergency Physician,Emergency,IPD Only,14,600,24x7,0
+DOC583,Dr. Meenakshi Chauhan,General Physician,General Medicine,Both,2,500,Morning,40
+DOC584,Dr. Pavithra Gupta,Cardiologist,Cardiology,IPD Only,23,1200,Morning,0
+DOC585,Dr. Balkishan Kapoor,Orthopedic Surgeon,Orthopedics,IPD Only,34,1000,Evening,0
+DOC586,Dr. Geetha Mehta,Orthopedic Surgeon,Orthopedics,Both,20,1000,Evening,45
+DOC587,Dr. Irfan Goyal,Pediatrician,Pediatrics,OPD Only,26,700,Morning,43
+DOC588,Dr. Naresh Kapoor,General Physician,General Medicine,OPD Only,27,500,Morning,49
+DOC589,Dr. Mohit Joshi,General Physician,General Medicine,Both,29,500,Morning,44
